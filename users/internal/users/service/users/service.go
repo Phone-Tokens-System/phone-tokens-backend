@@ -62,7 +62,7 @@ func (s *service) Register(ctx context.Context, phone, password string, role mod
 		UpdatedAt:    now,
 	}
 
-	if err = s.repo.CreateUser(ctx, user); err != nil {
+	if err = s.repo.Save(ctx, user); err != nil {
 		return nil, err
 	}
 
@@ -108,4 +108,3 @@ func (s *service) generateToken(user *model.User) (string, error) {
 
 // ErrNotFound is returned by repositories when user does not exist.
 var ErrNotFound = errors.New("user not found")
-

@@ -20,8 +20,8 @@ func NewPostgresRepository(db *gorm.DB) *PostgresRepository {
 
 var _ users.Repository = (*PostgresRepository)(nil)
 
-func (r *PostgresRepository) CreateUser(ctx context.Context, user *model.User) error {
-	return r.db.WithContext(ctx).Create(user).Error
+func (r *PostgresRepository) Save(ctx context.Context, entity interface{}) error {
+	return r.db.WithContext(ctx).Save(entity).Error
 }
 
 func (r *PostgresRepository) GetUserByPhone(ctx context.Context, phone string) (*model.User, error) {

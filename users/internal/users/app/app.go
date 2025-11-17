@@ -10,6 +10,7 @@ import (
 
 	httpadapter "users/internal/users/adapter/in/http"
 	"users/internal/users/adapter/out/repository"
+	"users/internal/users/model"
 	"users/internal/users/service/users"
 )
 
@@ -17,9 +18,18 @@ func NewHTTPServer(cfg Config) (*http.Server, error) {
 	if cfg.DatabaseURL == "" {
 		return nil, errors.New("DATABASE_URL is required")
 	}
+	if cfg.HTTPPort == "" {
+		return nil, errors.New("HTTP_PORT is required")
+	}
+	if cfg.JWTSecret == "" {
+		return nil, errors.New("JWT_SECRET is required")
+	}
+	if cfg.JWTExpiresInSec <= 0 {
+		return nil, errors.New("JWT_EXPIRES_IN_SEC must be greater than zero")
+	}
 
-	log.Printf("initializing PostgreSQL repository")
-	repo, err := newPostgresRepository(cfg.DatabaseURL)
+	log.Printf("initializing PostgreSQL repository and running migrations")
+	repo, err := NewPostgresRepository(cfg.DatabaseURL)
 	if err != nil {
 		return nil, err
 	}
@@ -46,9 +56,14 @@ func NewHTTPServer(cfg Config) (*http.Server, error) {
 	return server, nil
 }
 
-func newPostgresRepository(databaseURL string) (users.Repository, error) {
+func NewPostgresRepository(databaseURL string) (users.Repository, error) {
 	db, err := gorm.Open(postgres.Open(databaseURL), &gorm.Config{})
 	if err != nil {
+		return nil, err
+	}
+
+	// Run migrations on startup to ensure schema is up to date.
+	if err := db.AutoMigrate(&model.User{}); err != nil {
 		return nil, err
 	}
 

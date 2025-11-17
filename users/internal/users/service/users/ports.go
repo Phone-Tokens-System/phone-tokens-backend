@@ -8,7 +8,7 @@ import (
 
 // Repository describes storage operations required by the service.
 type Repository interface {
-	CreateUser(ctx context.Context, user *model.User) error
+	Save(ctx context.Context, entity interface{}) error
 	GetUserByPhone(ctx context.Context, phone string) (*model.User, error)
 	GetUserByID(ctx context.Context, id string) (*model.User, error)
 }
@@ -19,4 +19,3 @@ type Service interface {
 	Authenticate(ctx context.Context, phone, password string) (string, *model.User, error)
 	GetByID(ctx context.Context, id string) (*model.User, error)
 }
-
