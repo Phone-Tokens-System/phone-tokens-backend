@@ -106,5 +106,4 @@ func (s *service) generateToken(user *model.User) (string, error) {
 	return t.SignedString([]byte(s.config.JWTSecret))
 }
 
-// ErrNotFound is returned by repositories when user does not exist.
 var ErrNotFound = errors.New("user not found")

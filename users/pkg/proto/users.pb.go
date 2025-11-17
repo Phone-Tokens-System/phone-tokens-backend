@@ -9,7 +9,6 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// Role corresponds to users.v1.Role from users.proto.
 type Role int32
 
 const (
@@ -18,7 +17,6 @@ const (
 	Role_ROLE_USER        Role = 2
 )
 
-// User represents users.v1.User.
 type User struct {
 	Id        string `json:"id,omitempty"`
 	Phone     string `json:"phone,omitempty"`
@@ -27,48 +25,40 @@ type User struct {
 	UpdatedAt string `json:"updated_at,omitempty"`
 }
 
-// RegisterRequest represents users.v1.RegisterRequest.
 type RegisterRequest struct {
 	Phone    string `json:"phone,omitempty"`
 	Password string `json:"password,omitempty"`
 	Role     Role   `json:"role,omitempty"`
 }
 
-// RegisterResponse represents users.v1.RegisterResponse.
 type RegisterResponse struct {
 	User *User `json:"user,omitempty"`
 }
 
-// LoginRequest represents users.v1.LoginRequest.
 type LoginRequest struct {
 	Phone    string `json:"phone,omitempty"`
 	Password string `json:"password,omitempty"`
 }
 
-// LoginResponse represents users.v1.LoginResponse.
 type LoginResponse struct {
 	Token string `json:"token,omitempty"`
 	User  *User  `json:"user,omitempty"`
 }
 
-// GetUserRequest represents users.v1.GetUserRequest.
 type GetUserRequest struct {
 	Id string `json:"id,omitempty"`
 }
 
-// GetUserResponse represents users.v1.GetUserResponse.
 type GetUserResponse struct {
 	User *User `json:"user,omitempty"`
 }
 
-// UserServiceServer defines the gRPC server interface for users.v1.UserService.
 type UserServiceServer interface {
 	Register(context.Context, *RegisterRequest) (*RegisterResponse, error)
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
 	GetUser(context.Context, *GetUserRequest) (*GetUserResponse, error)
 }
 
-// UnimplementedUserServiceServer can be embedded to have forward compatible implementations.
 type UnimplementedUserServiceServer struct{}
 
 func (UnimplementedUserServiceServer) Register(context.Context, *RegisterRequest) (*RegisterResponse, error) {
@@ -83,7 +73,6 @@ func (UnimplementedUserServiceServer) GetUser(context.Context, *GetUserRequest) 
 	return nil, status.Errorf(codes.Unimplemented, "method GetUser not implemented")
 }
 
-// RegisterUserServiceServer registers the service implementation with a gRPC server.
 func RegisterUserServiceServer(s *grpc.Server, srv UserServiceServer) {
 	s.RegisterService(&_UserService_serviceDesc, srv)
 }
@@ -163,8 +152,6 @@ var _UserService_serviceDesc = grpc.ServiceDesc{
 	Metadata: "users.proto",
 }
 
-// jsonCodec is a gRPC codec that marshals messages as JSON.
-// It is defined here so both server and clients can reuse it.
 type JSONCodec struct{}
 
 func (JSONCodec) Name() string { return "json" }
@@ -176,4 +163,3 @@ func (JSONCodec) Marshal(v interface{}) ([]byte, error) {
 func (JSONCodec) Unmarshal(data []byte, v interface{}) error {
 	return json.Unmarshal(data, v)
 }
-

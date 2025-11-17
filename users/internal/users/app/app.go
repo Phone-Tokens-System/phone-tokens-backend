@@ -14,8 +14,6 @@ import (
 	"users/internal/users/service/users"
 )
 
-// BuildService инициализирует все основные зависимости (БД, миграции, репозиторий)
-// и создаёт сервис пользователей. Используется общим образом для HTTP и gRPC.
 func BuildService(cfg Config) (users.Service, error) {
 	if cfg.DatabaseURL == "" {
 		return nil, errors.New("DATABASE_URL is required")
@@ -38,7 +36,7 @@ func BuildService(cfg Config) (users.Service, error) {
 		return nil, errMigrate
 	}
 
-	repo := repository.NewPostgresRepository(db)
+	repo := repository.NewStorage(db)
 
 	return users.NewService(repo, users.Config{
 		JWTSecret:       cfg.JWTSecret,
@@ -46,7 +44,6 @@ func BuildService(cfg Config) (users.Service, error) {
 	}), nil
 }
 
-// NewHTTPServer создаёт HTTP‑сервер поверх уже инициализированного сервиса.
 func NewHTTPServer(cfg Config, svc users.Service) (*http.Server, error) {
 	if cfg.HTTPPort == "" {
 		return nil, errors.New("HTTP_PORT is required")

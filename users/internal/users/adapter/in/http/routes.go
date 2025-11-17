@@ -4,7 +4,6 @@ import (
 	"net/http"
 )
 
-// RegisterRoutes wires HTTP routes to handlers.
 func RegisterRoutes(mux *http.ServeMux, h *Handler, authCfg AuthConfig) {
 	mux.HandleFunc("POST /api/v1/register", h.Register)
 	mux.HandleFunc("POST /api/v1/login", h.Login)
@@ -25,4 +24,3 @@ func RegisterRoutes(mux *http.ServeMux, h *Handler, authCfg AuthConfig) {
 		_, _ = w.Write([]byte("admin ok"))
 	}))))
 }
-
