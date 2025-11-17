@@ -14,12 +14,11 @@ import (
 	"users/internal/users/service/users"
 )
 
-func NewHTTPServer(cfg Config) (*http.Server, error) {
+// BuildService инициализирует все основные зависимости (БД, миграции, репозиторий)
+// и создаёт сервис пользователей. Используется общим образом для HTTP и gRPC.
+func BuildService(cfg Config) (users.Service, error) {
 	if cfg.DatabaseURL == "" {
 		return nil, errors.New("DATABASE_URL is required")
-	}
-	if cfg.HTTPPort == "" {
-		return nil, errors.New("HTTP_PORT is required")
 	}
 	if cfg.JWTSecret == "" {
 		return nil, errors.New("JWT_SECRET is required")
@@ -28,16 +27,30 @@ func NewHTTPServer(cfg Config) (*http.Server, error) {
 		return nil, errors.New("JWT_EXPIRES_IN_SEC must be greater than zero")
 	}
 
-	log.Printf("initializing PostgreSQL repository and running migrations")
-	repo, err := NewPostgresRepository(cfg.DatabaseURL)
-	if err != nil {
-		return nil, err
+	log.Printf("initializing database connection")
+	db, errInit := gorm.Open(postgres.Open(cfg.DatabaseURL), &gorm.Config{})
+	if errInit != nil {
+		return nil, errInit
 	}
 
-	svc := users.NewService(repo, users.Config{
+	log.Printf("applying database migrations")
+	if errMigrate := db.AutoMigrate(&model.User{}); errMigrate != nil {
+		return nil, errMigrate
+	}
+
+	repo := repository.NewPostgresRepository(db)
+
+	return users.NewService(repo, users.Config{
 		JWTSecret:       cfg.JWTSecret,
 		JWTExpiresInSec: cfg.JWTExpiresInSec,
-	})
+	}), nil
+}
+
+// NewHTTPServer создаёт HTTP‑сервер поверх уже инициализированного сервиса.
+func NewHTTPServer(cfg Config, svc users.Service) (*http.Server, error) {
+	if cfg.HTTPPort == "" {
+		return nil, errors.New("HTTP_PORT is required")
+	}
 
 	handler := httpadapter.NewHandler(svc)
 
@@ -54,18 +67,4 @@ func NewHTTPServer(cfg Config) (*http.Server, error) {
 	log.Printf("HTTP server initialized on port %s", cfg.HTTPPort)
 
 	return server, nil
-}
-
-func NewPostgresRepository(databaseURL string) (users.Repository, error) {
-	db, err := gorm.Open(postgres.Open(databaseURL), &gorm.Config{})
-	if err != nil {
-		return nil, err
-	}
-
-	// Run migrations on startup to ensure schema is up to date.
-	if err := db.AutoMigrate(&model.User{}); err != nil {
-		return nil, err
-	}
-
-	return repository.NewPostgresRepository(db), nil
 }
