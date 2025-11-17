@@ -1,0 +1,22 @@
+package users
+
+import (
+	"context"
+
+	"users/internal/users/model"
+)
+
+// Repository describes storage operations required by the service.
+type Repository interface {
+	CreateUser(ctx context.Context, user *model.User) error
+	GetUserByPhone(ctx context.Context, phone string) (*model.User, error)
+	GetUserByID(ctx context.Context, id string) (*model.User, error)
+}
+
+// Service exposes user-related business use cases.
+type Service interface {
+	Register(ctx context.Context, phone, password string, role model.Role) (*model.User, error)
+	Authenticate(ctx context.Context, phone, password string) (string, *model.User, error)
+	GetByID(ctx context.Context, id string) (*model.User, error)
+}
+
