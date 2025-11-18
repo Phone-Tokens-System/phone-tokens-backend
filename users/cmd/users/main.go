@@ -6,7 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	grpcadapter "users/internal/users/adapter/in/grpc"
+	server "users/internal/users/adapter/in"
 	"users/internal/users/app"
 )
 
@@ -19,18 +19,18 @@ func main() {
 		log.Fatalf("failed to initialize service: %v", err)
 	}
 
-	// HTTP‑сервер.
-	httpServer, err := app.NewHTTPServer(cfg, svc)
+	// HTTP‑сервер из adapter/in.
+	httpServer, err := server.NewHTTPServer(cfg.HTTPPort, cfg.JWTSecret, svc)
 	if err != nil {
 		log.Fatalf("failed to initialize HTTP server: %v", err)
 	}
 
-	// gRPC‑сервер.
+	// gRPC‑сервер из adapter/in.
 	if cfg.GRPCPort == "" {
 		log.Fatal("GRPC_PORT is required")
 	}
 	grpcAddr := ":" + cfg.GRPCPort
-	grpcServer, grpcLis, err := grpcadapter.Start(grpcAddr, svc)
+	grpcServer, grpcLis, err := server.Start(grpcAddr, svc)
 	if err != nil {
 		log.Fatalf("failed to start gRPC server: %v", err)
 	}
