@@ -2,13 +2,12 @@ package service
 
 import (
 	"context"
-	"encoding/pem"
 	"phone-tokens/internal/model"
 )
 
-func (s *CertificateService) AcceptCertificate(ctx context.Context, block pem.Block) (int, error) {
+func (s *CertificateService) AcceptCertificate(ctx context.Context, block []byte) (int, error) {
 	csrRequest := model.CsrRequest{
-		CSR:    block.Bytes,
+		CSR:    block,
 		Status: "PENDING",
 	}
 
