@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package certificates;
+
+option go_package= "certificates.pb";
+
+message CertificateRequest {
+  bytes CSR = 1;
+}
+
+message CertificateRequestId {
+  string ID = 1;
+}
+message Certificate {
+  bytes Certificate = 1;
+}
+
+message CertificateRequests {
+  repeated CertificateRequest requests = 1;
+}
+
+message Empty {}
+
+service CertificateService{
+      rpc AcceptCertificate(CertificateRequest) returns (CertificateRequestId);
+      rpc ApproveCertificate(CertificateRequestId) returns (CertificateRequest);
+      rpc GetCertificateRequests(Empty) returns (CertificateRequests);
+      rpc GetSignedCertificate(CertificateRequestId) returns (Certificate);
+}

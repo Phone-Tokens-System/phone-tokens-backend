@@ -1,31 +1,158 @@
 package service
 
 import (
+	"bytes"
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
+	"fmt"
+	"math/big"
+	"os"
+	"phone-tokens/internal/adapter/out/repository"
 	"phone-tokens/internal/model"
+	"time"
 )
 
-func (s *CertificateService) AcceptCertificate(ctx context.Context, block []byte) (int, error) {
-	csrRequest := model.CsrRequest{
-		CSR:    block,
-		Status: "PENDING",
-	}
-
-	request, err := s.storage.SaveCsrRequest(ctx, csrRequest)
-	if err != nil {
-		return 0, err
-	}
-	return request.ID, nil
+type CertificateService struct {
+	CAKey         *ecdsa.PrivateKey   `json:"ca_key"`
+	CACertificate *x509.Certificate   `json:"ca_certificate"`
+	Storage       *repository.Storage `json:"storage"`
 }
 
-func (s *CertificateService) ApproveCertificate(ctx context.Context, ID string) (*model.CsrRequest, error) {
-	err := s.storage.UpdateCsrStatus(ctx, ID, "APPROVED")
+func NewCertificateService() (*CertificateService, error) {
+	certFile, err := os.ReadFile("cert.pem")
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	cert, err := x509.ParseCertificate(certFile)
+
 	if err != nil {
 		return nil, err
 	}
-	return s.storage.GetCsrRequest(ctx, ID)
+
+	keyFile, err := os.ReadFile("key.pem")
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	key, err := x509.ParseECPrivateKey(keyFile)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	return &CertificateService{
+		CAKey:         key,
+		CACertificate: cert,
+	}, nil
 }
 
-func (s *CertificateService) GetCertificateRequests(ctx context.Context) ([]model.CsrRequest, error) {
-	return s.storage.GetCsrRequests(ctx)
+func CreateOurCert() error {
+	ca := &x509.Certificate{
+		SerialNumber: big.NewInt(2025),
+		Subject: pkix.Name{
+			Organization:  []string{"Company, PAKOSTIN INCORPARATED"},
+			Country:       []string{"Russia"},
+			Province:      []string{"GREAT SIBERIA"},
+			Locality:      []string{"Novosibirsk"},
+			StreetAddress: []string{"Great street"},
+			PostalCode:    []string{"32423"},
+		},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().AddDate(10, 0, 0),
+		IsCA:                  true,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
+		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+		BasicConstraintsValid: true,
+	}
+	caPrivKey, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+	if err != nil {
+		return err
+	}
+	cert, err := x509.CreateCertificate(rand.Reader, ca, ca, &caPrivKey.PublicKey, caPrivKey)
+	if err != nil {
+		return err
+	}
+
+	caPEM, err := os.Create("cert.pem")
+
+	err = pem.Encode(caPEM, &pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: cert,
+	})
+	if err != nil {
+		return err
+	}
+
+	caPrivKeyPEM, _ := os.Create("key.pem")
+	bytesKey, err := x509.MarshalECPrivateKey(caPrivKey)
+
+	err = pem.Encode(caPrivKeyPEM, &pem.Block{
+		Type:  "ECDSA PRIVATE KEY",
+		Bytes: bytesKey,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *CertificateService) signCertificateForAgent(ctx context.Context, block []byte, csrID int) (*bytes.Buffer, error) {
+	CSR, err := x509.ParseCertificateRequest(block)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = CSR.CheckSignature(); err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	randNum, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
+	if err != nil {
+		return nil, err
+	}
+
+	serviceCert := &x509.Certificate{
+		SerialNumber: big.NewInt(randNum.Int64()),
+		Subject: pkix.Name{
+			Organization:  CSR.Subject.Organization,
+			Country:       CSR.Subject.Country,
+			Province:      CSR.Subject.Province,
+			Locality:      CSR.Subject.Locality,
+			StreetAddress: CSR.Subject.StreetAddress,
+			PostalCode:    CSR.Subject.PostalCode,
+		},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().AddDate(10, 0, 0),
+		IsCA:                  false,
+		KeyUsage:              x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
+		BasicConstraintsValid: true,
+	}
+
+	cert, err := x509.CreateCertificate(rand.Reader, serviceCert, s.CACertificate, s.CAKey.PublicKey, s.CAKey)
+
+	certPem := new(bytes.Buffer)
+	err = pem.Encode(certPem, &pem.Block{
+		Type:  "Certificate",
+		Bytes: cert,
+	})
+
+	agentInfo := model.ExternalAgentInfo{
+		OrganizationID: CSR.Subject.Organization[0],
+		CertificatePem: cert,
+		IsActive:       true,
+		CsrID:          csrID,
+	}
+	err = s.Storage.SaveAgentInfo(ctx, agentInfo)
+	if err != nil {
+		return nil, err
+	}
+	return certPem, nil
 }

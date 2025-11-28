@@ -23,13 +23,13 @@ func (r *Storage) SaveCsrRequest(ctx context.Context, request model.CsrRequest) 
 	return request, nil
 }
 
-func (r *Storage) GetCsrRequest(ctx context.Context, ID string) (*model.CsrRequest, error) {
+func (r *Storage) GetCsrRequest(ctx context.Context, ID int) (*model.CsrRequest, error) {
 	var request model.CsrRequest
 	err := r.db.WithContext(ctx).First(&request, "id = ?", ID).Error
 	return &request, err
 }
 
-func (r *Storage) UpdateCsrStatus(ctx context.Context, ID string, status string) error {
+func (r *Storage) UpdateCsrStatus(ctx context.Context, ID int, status string) error {
 	var request model.CsrRequest
 	err := r.db.WithContext(ctx).First(&request, "id = ?", ID).Error
 	if err != nil {
@@ -49,4 +49,15 @@ func (r *Storage) GetCsrRequests(ctx context.Context) ([]model.CsrRequest, error
 	}
 
 	return requests, nil
+}
+
+func (r *Storage) SaveAgentInfo(ctx context.Context, info model.ExternalAgentInfo) error {
+	err := r.db.WithContext(ctx).Save(&info).Error
+	return err
+}
+
+func (r *Storage) GetAgentInfo(ctx context.Context, csrID int) (*model.ExternalAgentInfo, error) {
+	var info model.ExternalAgentInfo
+	err := r.db.WithContext(ctx).First(&info, "csr_id = ?", csrID).Error
+	return &info, err
 }

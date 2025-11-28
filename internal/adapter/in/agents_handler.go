@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"phone-tokens/internal/service"
+	"strconv"
 )
 
 type Handler struct {
@@ -22,7 +23,7 @@ func (h *Handler) AcceptCSRRequest(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 
-	certificate, err := h.CertificateService.AcceptCertificate(r.Context(), csr)
+	certificate, err := h.CertificateService.AcceptCertificateRequest(r.Context(), csr)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -55,8 +56,8 @@ func (h *Handler) ShowCSRRequests(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) ApproveCSRRequest(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
-
-	request, err := h.CertificateService.ApproveCertificate(r.Context(), id)
+	idInt, err := strconv.Atoi(id)
+	request, err := h.CertificateService.ApproveCertificateRequest(r.Context(), idInt)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
