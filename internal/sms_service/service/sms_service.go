@@ -3,7 +3,7 @@ package service
 import (
 	"fmt"
 	"math/big"
-	"phone-tokens/internal/service"
+	"phone-tokens/internal/certificates/service"
 	"phone-tokens/internal/sms_service/model"
 )
 
