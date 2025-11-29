@@ -13,7 +13,7 @@ import (
 	"math/big"
 	"os"
 	"phone-tokens/internal/adapter/out/repository"
-	"phone-tokens/internal/model"
+	"phone-tokens/internal/certificates/model"
 	"time"
 
 	"github.com/google/uuid"

@@ -3,7 +3,8 @@ package in
 import (
 	"encoding/json"
 	"net/http"
-	"phone-tokens/internal/service"
+	"phone-tokens/internal/adapter/dto"
+	"phone-tokens/internal/certificates/service"
 	"strconv"
 )
 
@@ -16,7 +17,7 @@ func NewHandler(certService *service.CertificateService) *Handler {
 }
 
 func (h *Handler) AcceptCSRRequest(w http.ResponseWriter, r *http.Request) {
-	var csr []byte
+	var csr dto.CSRRequest
 
 	err := json.NewDecoder(r.Body).Decode(&csr)
 	if err != nil {

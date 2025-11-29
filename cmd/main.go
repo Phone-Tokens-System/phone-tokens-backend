@@ -1,6 +1,8 @@
 package main
 
-import "phone-tokens/internal/service"
+import (
+	"phone-tokens/internal/certificates/service"
+)
 
 func main() {
 	err := service.CreateOurCert()
