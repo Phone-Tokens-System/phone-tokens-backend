@@ -13,14 +13,16 @@ import (
 	"math/big"
 	"os"
 	"phone-tokens/internal/adapter/out/repository"
-	"phone-tokens/internal/model"
+	"phone-tokens/internal/certificates/model"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type CertificateService struct {
-	CAKey         *ecdsa.PrivateKey   `json:"ca_key"`
-	CACertificate *x509.Certificate   `json:"ca_certificate"`
-	Storage       *repository.Storage `json:"storage"`
+	CAKeyPem         []byte              `json:"ca_key"`
+	CACertificatePem []byte              `json:"ca_certificate"`
+	Storage          *repository.Storage `json:"storage"`
 }
 
 func NewCertificateService() (*CertificateService, error) {
@@ -29,27 +31,35 @@ func NewCertificateService() (*CertificateService, error) {
 		fmt.Println(err)
 		return nil, err
 	}
-
-	cert, err := x509.ParseCertificate(certFile)
-
-	if err != nil {
-		return nil, err
-	}
-
 	keyFile, err := os.ReadFile("key.pem")
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
 	}
-	key, err := x509.ParseECPrivateKey(keyFile)
-	if err != nil {
-		fmt.Println(err)
-		return nil, err
-	}
 	return &CertificateService{
-		CAKey:         key,
-		CACertificate: cert,
+		CAKeyPem:         keyFile,
+		CACertificatePem: certFile,
 	}, nil
+	//cert, err := x509.ParseCertificate(certFile)
+	//
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//keyFile, err := os.ReadFile("key.pem")
+	//if err != nil {
+	//	fmt.Println(err)
+	//	return nil, err
+	//}
+	//key, err := x509.ParseECPrivateKey(keyFile)
+	//if err != nil {
+	//	fmt.Println(err)
+	//	return nil, err
+	//}
+	//return &CertificateService{
+	//	CAKey:         key,
+	//	CACertificate: cert,
+	//}, nil
 }
 
 func CreateOurCert() error {
@@ -102,6 +112,22 @@ func CreateOurCert() error {
 	return nil
 }
 
+func (s *CertificateService) ParseCertFromPem(certFile []byte) (*x509.Certificate, error) {
+	cert, err := x509.ParseCertificate(certFile)
+	if err != nil {
+		return nil, err
+	}
+	return cert, nil
+}
+
+func (s *CertificateService) ParseKeyFromPem(keyFile []byte) (*ecdsa.PrivateKey, error) {
+	key, err := x509.ParseECPrivateKey(keyFile)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	return key, nil
+}
 func (s *CertificateService) signCertificateForAgent(ctx context.Context, block []byte, csrID int) (*bytes.Buffer, error) {
 	CSR, err := x509.ParseCertificateRequest(block)
 	if err != nil {
@@ -112,14 +138,22 @@ func (s *CertificateService) signCertificateForAgent(ctx context.Context, block 
 		fmt.Println(err)
 		return nil, err
 	}
-
-	randNum, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
+	certCA, err := s.ParseCertFromPem(s.CACertificatePem)
 	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	keyCA, err := s.ParseKeyFromPem(s.CAKeyPem)
+	if err != nil {
+		fmt.Println(err)
 		return nil, err
 	}
 
+	uid := uuid.New()
+	serialNumber := new(big.Int).SetBytes(uid[:])
+
 	serviceCert := &x509.Certificate{
-		SerialNumber: big.NewInt(randNum.Int64()),
+		SerialNumber: serialNumber,
 		Subject: pkix.Name{
 			Organization:  CSR.Subject.Organization,
 			Country:       CSR.Subject.Country,
@@ -136,7 +170,7 @@ func (s *CertificateService) signCertificateForAgent(ctx context.Context, block 
 		BasicConstraintsValid: true,
 	}
 
-	cert, err := x509.CreateCertificate(rand.Reader, serviceCert, s.CACertificate, s.CAKey.PublicKey, s.CAKey)
+	cert, err := x509.CreateCertificate(rand.Reader, serviceCert, certCA, keyCA.PublicKey, keyCA)
 
 	certPem := new(bytes.Buffer)
 	err = pem.Encode(certPem, &pem.Block{
@@ -146,9 +180,10 @@ func (s *CertificateService) signCertificateForAgent(ctx context.Context, block 
 
 	agentInfo := model.ExternalAgentInfo{
 		OrganizationID: CSR.Subject.Organization[0],
-		CertificatePem: cert,
+		CertificatePem: certPem.Bytes(),
 		IsActive:       true,
 		CsrID:          csrID,
+		ID:             uid,
 	}
 	err = s.Storage.SaveAgentInfo(ctx, agentInfo)
 	if err != nil {

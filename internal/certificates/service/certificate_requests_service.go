@@ -2,13 +2,15 @@ package service
 
 import (
 	"context"
-	"phone-tokens/internal/model"
+	"phone-tokens/internal/adapter/dto"
+	"phone-tokens/internal/certificates/model"
 )
 
-func (s *CertificateService) AcceptCertificateRequest(ctx context.Context, block []byte) (int, error) {
+func (s *CertificateService) AcceptCertificateRequest(ctx context.Context, requestDTO dto.CSRRequest) (int, error) {
 	csrRequest := model.CsrRequest{
-		CSR:    block,
+		CSR:    requestDTO.CSR,
 		Status: "PENDING",
+		Email:  requestDTO.Email,
 	}
 
 	request, err := s.Storage.SaveCsrRequest(ctx, csrRequest)

@@ -1,6 +1,6 @@
 package dto
 
 type CSRRequest struct {
-	CSR       string `json:"csr"`
-	ServiceID string `json:"service_id"`
+	CSR   []byte `json:"csr"`
+	Email string `json:"email"`
 }
