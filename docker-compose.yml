@@ -12,20 +12,19 @@ services:
       - "5432:5432"
     volumes:
       - users-db-data:/var/lib/postgresql/data
-      - ./users/database:/docker-entrypoint-initdb.d
+      - ./database:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U users"]
       interval: 5s
       timeout: 5s
       retries: 10
 
-  users:
+  app:
     build:
-      context: ./users
-    container_name: users-service
+      context: .
+    container_name: app-server
     environment:
       HTTP_PORT: "${HTTP_PORT}"
-      GRPC_PORT: "${GRPC_PORT}"
       JWT_SECRET: "${JWT_SECRET}"
       JWT_EXPIRES_IN_SEC: "${JWT_EXPIRES_IN_SEC}"
       DATABASE_URL: "${DATABASE_URL}"
