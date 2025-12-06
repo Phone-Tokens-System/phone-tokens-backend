@@ -59,3 +59,38 @@ func (r *Storage) GetUserByID(ctx context.Context, id string) (*model.User, erro
 func (r *Storage) CreateToken(ctx context.Context, token *model.UserToken) error {
 	return r.db.WithContext(ctx).Create(token).Error
 }
+
+func (r *Storage) GetTokenByID(ctx context.Context, id string) (*model.UserToken, error) {
+	var token model.UserToken
+
+	if err := r.db.WithContext(ctx).Where("id = ?", id).First(&token).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, tokens.ErrNotFound
+		}
+		return nil, err
+	}
+
+	return &token, nil
+}
+
+func (r *Storage) UpdateToken(ctx context.Context, token *model.UserToken) error {
+	result := r.db.WithContext(ctx).Model(&model.UserToken{}).Where("id = ?", token.ID).Update("expires_at", token.ExpiresAt)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return tokens.ErrNotFound
+	}
+	return nil
+}
+
+func (r *Storage) DeleteToken(ctx context.Context, id string) error {
+	result := r.db.WithContext(ctx).Where("id = ?", id).Delete(&model.UserToken{})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return tokens.ErrNotFound
+	}
+	return nil
+}

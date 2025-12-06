@@ -49,6 +49,54 @@ func (s *service) Issue(ctx context.Context, userID string, ttlSeconds int64) (*
 	return token, nil
 }
 
+func (s *service) UpdateTTL(ctx context.Context, userID, tokenID string, ttlSeconds int64) (*model.UserToken, error) {
+	if ttlSeconds <= 0 {
+		return nil, errors.New("ttlSeconds must be greater than zero")
+	}
+	if userID == "" {
+		return nil, errors.New("userID is required")
+	}
+	if tokenID == "" {
+		return nil, errors.New("tokenID is required")
+	}
+
+	token, err := s.repo.GetTokenByID(ctx, tokenID)
+	if err != nil {
+		return nil, err
+	}
+	if token.UserID != userID {
+		return nil, ErrForbidden
+	}
+
+	now := time.Now().UTC()
+	token.ExpiresAt = now.Add(time.Duration(ttlSeconds) * time.Second)
+
+	if err := s.repo.UpdateToken(ctx, token); err != nil {
+		return nil, err
+	}
+
+	return token, nil
+}
+
+func (s *service) Delete(ctx context.Context, userID, tokenID string) error {
+	if userID == "" {
+		return errors.New("userID is required")
+	}
+	if tokenID == "" {
+		return errors.New("tokenID is required")
+	}
+
+	token, err := s.repo.GetTokenByID(ctx, tokenID)
+	if err != nil {
+		return err
+	}
+	if token.UserID != userID {
+		return ErrForbidden
+	}
+
+	return s.repo.DeleteToken(ctx, tokenID)
+}
+
 func generateRandomToken(nBytes int) (string, error) {
 	b := make([]byte, nBytes)
 	if _, err := rand.Read(b); err != nil {
@@ -56,4 +104,3 @@ func generateRandomToken(nBytes int) (string, error) {
 	}
 	return hex.EncodeToString(b), nil
 }
-

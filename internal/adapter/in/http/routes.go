@@ -26,4 +26,6 @@ func RegisterRoutes(mux *http.ServeMux, h *Handler, authCfg AuthConfig) {
 
 	// Issue user tokens (requires authentication).
 	mux.Handle("/api/v1/tokens", authMiddleware(http.HandlerFunc(h.CreateToken)))
+	mux.Handle("PATCH /api/v1/tokens/{tokenID}", authMiddleware(http.HandlerFunc(h.UpdateTokenTTL)))
+	mux.Handle("DELETE /api/v1/tokens/{tokenID}", authMiddleware(http.HandlerFunc(h.DeleteToken)))
 }

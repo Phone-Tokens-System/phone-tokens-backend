@@ -95,7 +95,8 @@ type createTokenRequest struct {
 	TTLSeconds int64 `json:"ttl_seconds"`
 }
 
-type createTokenResponse struct {
+type tokenResponse struct {
+	ID        string `json:"id"`
 	Token     string `json:"token"`
 	ExpiresAt string `json:"expires_at"`
 }
@@ -124,12 +125,93 @@ func (h *Handler) CreateToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := createTokenResponse{
+	resp := tokenResponse{
+		ID:        token.ID,
 		Token:     token.Token,
 		ExpiresAt: token.ExpiresAt.Format(time.RFC3339),
 	}
 
 	writeJSON(w, http.StatusCreated, resp)
+}
+
+type updateTokenRequest struct {
+	TTLSeconds int64 `json:"ttl_seconds"`
+}
+
+// UpdateTokenTTL updates token expiration time for the authenticated user.
+func (h *Handler) UpdateTokenTTL(w http.ResponseWriter, r *http.Request) {
+	var req updateTokenRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	if req.TTLSeconds <= 0 {
+		http.Error(w, "ttl_seconds must be greater than zero", http.StatusBadRequest)
+		return
+	}
+
+	tokenID := r.PathValue("tokenID")
+	if tokenID == "" {
+		http.Error(w, "token id is required", http.StatusBadRequest)
+		return
+	}
+
+	claims, ok := r.Context().Value(userContextKey).(*UserClaims)
+	if !ok || claims.UserID == "" {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	token, err := h.tokenService.UpdateTTL(r.Context(), claims.UserID, tokenID, req.TTLSeconds)
+	if err != nil {
+		switch err {
+		case tokens.ErrForbidden:
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case tokens.ErrNotFound:
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, "internal error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	resp := tokenResponse{
+		ID:        token.ID,
+		Token:     token.Token,
+		ExpiresAt: token.ExpiresAt.Format(time.RFC3339),
+	}
+
+	writeJSON(w, http.StatusOK, resp)
+}
+
+// DeleteToken removes a token for the authenticated user.
+func (h *Handler) DeleteToken(w http.ResponseWriter, r *http.Request) {
+	tokenID := r.PathValue("tokenID")
+	if tokenID == "" {
+		http.Error(w, "token id is required", http.StatusBadRequest)
+		return
+	}
+
+	claims, ok := r.Context().Value(userContextKey).(*UserClaims)
+	if !ok || claims.UserID == "" {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	err := h.tokenService.Delete(r.Context(), claims.UserID, tokenID)
+	if err != nil {
+		switch err {
+		case tokens.ErrForbidden:
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case tokens.ErrNotFound:
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, "internal error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func writeJSON(w http.ResponseWriter, status int, v interface{}) {
