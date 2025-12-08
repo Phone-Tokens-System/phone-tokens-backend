@@ -8,5 +8,5 @@ type CsrRequest struct {
 }
 
 func (CsrRequest) TableName() string {
-	return "csr_requests"
+	return "certificate_requests"
 }

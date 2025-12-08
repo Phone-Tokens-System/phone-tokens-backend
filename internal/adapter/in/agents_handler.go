@@ -8,15 +8,15 @@ import (
 	"strconv"
 )
 
-type Handler struct {
+type AgentHandler struct {
 	CertificateService *service.CertificateService
 }
 
-func NewHandler(certService *service.CertificateService) *Handler {
-	return &Handler{certService}
+func NewHandler(certService *service.CertificateService) *AgentHandler {
+	return &AgentHandler{certService}
 }
 
-func (h *Handler) AcceptCSRRequest(w http.ResponseWriter, r *http.Request) {
+func (h *AgentHandler) AcceptCSRRequest(w http.ResponseWriter, r *http.Request) {
 	var csr dto.CSRRequest
 
 	err := json.NewDecoder(r.Body).Decode(&csr)
@@ -39,7 +39,7 @@ func (h *Handler) AcceptCSRRequest(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) ShowCSRRequests(w http.ResponseWriter, r *http.Request) {
+func (h *AgentHandler) ShowCSRRequests(w http.ResponseWriter, r *http.Request) {
 	requests, err := h.CertificateService.GetCertificateRequests(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -55,7 +55,7 @@ func (h *Handler) ShowCSRRequests(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) ApproveCSRRequest(w http.ResponseWriter, r *http.Request) {
+func (h *AgentHandler) ApproveCSRRequest(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
 	idInt, err := strconv.Atoi(id)
 	request, err := h.CertificateService.ApproveCertificateRequest(r.Context(), idInt)
