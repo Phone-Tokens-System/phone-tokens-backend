@@ -14,9 +14,17 @@ type Repository interface {
 	DeleteToken(ctx context.Context, id string) error
 }
 
+type IssueInput struct {
+	UserID      string
+	Name        string
+	TTLSeconds  int64
+	Permissions []model.TokenPermission
+}
+
 // Service defines token issuance use cases.
 type Service interface {
-	Issue(ctx context.Context, userID string, ttlSeconds int64) (*model.UserToken, error)
+	Issue(ctx context.Context, input IssueInput) (*model.UserToken, error)
 	UpdateTTL(ctx context.Context, userID, tokenID string, ttlSeconds int64) (*model.UserToken, error)
+	SetStatus(ctx context.Context, userID, tokenID string, status model.TokenStatus) (*model.UserToken, error)
 	Delete(ctx context.Context, userID, tokenID string) error
 }

@@ -74,7 +74,15 @@ func (r *Storage) GetTokenByID(ctx context.Context, id string) (*model.UserToken
 }
 
 func (r *Storage) UpdateToken(ctx context.Context, token *model.UserToken) error {
-	result := r.db.WithContext(ctx).Model(&model.UserToken{}).Where("id = ?", token.ID).Update("expires_at", token.ExpiresAt)
+	result := r.db.WithContext(ctx).
+		Model(&model.UserToken{}).
+		Where("id = ?", token.ID).
+		Updates(map[string]interface{}{
+			"name":        token.Name,
+			"permissions": toPermissionStrings(token.Permissions),
+			"status":      token.Status,
+			"expires_at":  token.ExpiresAt,
+		})
 	if result.Error != nil {
 		return result.Error
 	}
@@ -93,4 +101,12 @@ func (r *Storage) DeleteToken(ctx context.Context, id string) error {
 		return tokens.ErrNotFound
 	}
 	return nil
+}
+
+func toPermissionStrings(perms []model.TokenPermission) []string {
+	result := make([]string, 0, len(perms))
+	for _, p := range perms {
+		result = append(result, string(p))
+	}
+	return result
 }
