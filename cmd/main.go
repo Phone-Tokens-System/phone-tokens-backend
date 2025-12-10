@@ -1,27 +1,45 @@
 package main
 
 import (
-	"fmt"
-	"phone-tokens/internal/app/config/env"
-	"phone-tokens/internal/sms_service/service/sms_aero"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
+
+	server "phone_token_system/internal/adapter/in"
+	"phone_token_system/internal/app"
 )
 
+// Entry point for the monolithic HTTP server.
 func main() {
-	config, err := env.LoadConfigEnv()
-	if err != nil {
-		panic(err)
-	}
-	aeroService := sms_aero.NewAeroService(config.Email, config.ApiKey)
+	cfg := app.LoadConfig()
 
-	sms, err := aeroService.GetSmsList()
+	userSvc, tokenSvc, err := app.BuildService(cfg)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to initialize service: %v", err)
 	}
-	for key, value := range sms {
-		fmt.Println(key, value)
+
+	httpServer, err := server.NewHTTPServer(cfg.HTTPPort, cfg.JWTSecret, userSvc, tokenSvc)
+	if err != nil {
+		log.Fatalf("failed to initialize HTTP server: %v", err)
 	}
-	//smsSent, err := aeroService.SendSms(79232213113, "Phone tokens system. defense date: December 18")
-	//if err != nil {
-	//	fmt.Println(err)
-	//}
+
+	go func() {
+		log.Printf("HTTP server started on :%s", cfg.HTTPPort)
+		if err := httpServer.ListenAndServe(); err != nil && err.Error() != "http: Server closed" {
+			log.Fatalf("HTTP server error: %v", err)
+		}
+	}()
+
+	log.Println("monolith started")
+
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+	<-stop
+
+	if err := httpServer.Close(); err != nil {
+		log.Printf("error shutting down HTTP server: %v", err)
+	}
+
+	log.Println("monolith stopped")
 }

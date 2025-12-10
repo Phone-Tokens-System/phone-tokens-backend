@@ -2,10 +2,18 @@ package repository
 
 import (
 	"context"
-	"phone-tokens/internal/certificates/model"
+	"errors"
 
 	"gorm.io/gorm"
+
+	"phone_token_system/internal/model"
+	"phone_token_system/internal/service/tokens"
+	"phone_token_system/internal/service/users"
 )
+
+type PostgresRepository struct {
+	db *gorm.DB
+}
 
 type Storage struct {
 	db *gorm.DB
@@ -15,49 +23,74 @@ func NewStorage(db *gorm.DB) *Storage {
 	return &Storage{db: db}
 }
 
-func (r *Storage) SaveCsrRequest(ctx context.Context, request model.CsrRequest) (model.CsrRequest, error) {
-	err := r.db.WithContext(ctx).Save(&request).Error
-	if err != nil {
-		return model.CsrRequest{}, err
-	}
-	return request, nil
+var _ users.Repository = (*Storage)(nil)
+var _ tokens.Repository = (*Storage)(nil)
+
+func (r *Storage) Save(ctx context.Context, entity interface{}) error {
+	return r.db.WithContext(ctx).Save(entity).Error
 }
 
-func (r *Storage) GetCsrRequest(ctx context.Context, ID int) (*model.CsrRequest, error) {
-	var request model.CsrRequest
-	err := r.db.WithContext(ctx).First(&request, "id = ?", ID).Error
-	return &request, err
-}
+func (r *Storage) GetUserByPhone(ctx context.Context, phone string) (*model.User, error) {
+	var user model.User
 
-func (r *Storage) UpdateCsrStatus(ctx context.Context, ID int, status string) error {
-	var request model.CsrRequest
-	err := r.db.WithContext(ctx).First(&request, "id = ?", ID).Error
-	if err != nil {
-		return err
-	}
-
-	request.Status = status
-	return r.db.WithContext(ctx).Save(&request).Error
-}
-
-func (r *Storage) GetCsrRequests(ctx context.Context) ([]model.CsrRequest, error) {
-	requests := []model.CsrRequest{}
-	err := r.db.WithContext(ctx).Find(&requests).Error
-
-	if err != nil {
+	if err := r.db.WithContext(ctx).Where("phone = ?", phone).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, users.ErrNotFound
+		}
 		return nil, err
 	}
 
-	return requests, nil
+	return &user, nil
 }
 
-func (r *Storage) SaveAgentInfo(ctx context.Context, info model.ExternalAgentInfo) error {
-	err := r.db.WithContext(ctx).Save(&info).Error
-	return err
+func (r *Storage) GetUserByID(ctx context.Context, id string) (*model.User, error) {
+	var user model.User
+
+	if err := r.db.WithContext(ctx).Where("id = ?", id).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, users.ErrNotFound
+		}
+		return nil, err
+	}
+
+	return &user, nil
 }
 
-func (r *Storage) GetAgentInfo(ctx context.Context, csrID int) (*model.ExternalAgentInfo, error) {
-	var info model.ExternalAgentInfo
-	err := r.db.WithContext(ctx).First(&info, "csr_id = ?", csrID).Error
-	return &info, err
+func (r *Storage) CreateToken(ctx context.Context, token *model.UserToken) error {
+	return r.db.WithContext(ctx).Create(token).Error
+}
+
+func (r *Storage) GetTokenByID(ctx context.Context, id string) (*model.UserToken, error) {
+	var token model.UserToken
+
+	if err := r.db.WithContext(ctx).Where("id = ?", id).First(&token).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, tokens.ErrNotFound
+		}
+		return nil, err
+	}
+
+	return &token, nil
+}
+
+func (r *Storage) UpdateToken(ctx context.Context, token *model.UserToken) error {
+	result := r.db.WithContext(ctx).Model(&model.UserToken{}).Where("id = ?", token.ID).Update("expires_at", token.ExpiresAt)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return tokens.ErrNotFound
+	}
+	return nil
+}
+
+func (r *Storage) DeleteToken(ctx context.Context, id string) error {
+	result := r.db.WithContext(ctx).Where("id = ?", id).Delete(&model.UserToken{})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return tokens.ErrNotFound
+	}
+	return nil
 }

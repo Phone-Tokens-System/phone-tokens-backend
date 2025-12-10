@@ -1,0 +1,204 @@
+package tokens
+
+import (
+	"context"
+	"errors"
+	"testing"
+	"time"
+
+	"phone_token_system/internal/model"
+)
+
+func TestServiceUpdateTTLSuccess(t *testing.T) {
+	repo := newMemoryRepo()
+	svc := NewService(repo)
+
+	token := &model.UserToken{
+		ID:        "token-1",
+		UserID:    "user-1",
+		Token:     "value",
+		ExpiresAt: time.Now().UTC().Add(time.Hour),
+		CreatedAt: time.Now().UTC(),
+	}
+	repo.tokens[token.ID] = token
+
+	ttl := int64(120)
+	before := time.Now().UTC()
+
+	updated, err := svc.UpdateTTL(context.Background(), token.UserID, token.ID, ttl)
+	if err != nil {
+		t.Fatalf("UpdateTTL returned error: %v", err)
+	}
+	after := time.Now().UTC()
+
+	lower := before.Add(time.Duration(ttl) * time.Second)
+	upper := after.Add(time.Duration(ttl) * time.Second)
+	if updated.ExpiresAt.Before(lower) || updated.ExpiresAt.After(upper) {
+		t.Fatalf("ExpiresAt %v not in expected range [%v, %v]", updated.ExpiresAt, lower, upper)
+	}
+
+	stored := repo.tokens[token.ID]
+	if stored == nil || !stored.ExpiresAt.Equal(updated.ExpiresAt) {
+		t.Fatalf("repository not updated with new expiration")
+	}
+}
+
+func TestServiceUpdateTTLForbidden(t *testing.T) {
+	repo := newMemoryRepo()
+	svc := NewService(repo)
+
+	token := &model.UserToken{
+		ID:        "token-2",
+		UserID:    "owner",
+		Token:     "value",
+		ExpiresAt: time.Now().UTC().Add(time.Hour),
+		CreatedAt: time.Now().UTC(),
+	}
+	repo.tokens[token.ID] = token
+
+	_, err := svc.UpdateTTL(context.Background(), "other-user", token.ID, 60)
+	if err := assertError(t, err, ErrForbidden); err != nil {
+		t.Fatal(err)
+	}
+	if !repo.tokens[token.ID].ExpiresAt.Equal(token.ExpiresAt) {
+		t.Fatalf("ExpiresAt changed for forbidden update")
+	}
+}
+
+func TestServiceUpdateTTLNotFound(t *testing.T) {
+	repo := newMemoryRepo()
+	svc := NewService(repo)
+
+	_, err := svc.UpdateTTL(context.Background(), "user", "missing", 60)
+	if err := assertError(t, err, ErrNotFound); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestServiceUpdateTTLValidation(t *testing.T) {
+	repo := newMemoryRepo()
+	svc := NewService(repo)
+
+	if _, err := svc.UpdateTTL(context.Background(), "", "id", 60); err == nil {
+		t.Fatalf("expected error for missing userID")
+	}
+	if _, err := svc.UpdateTTL(context.Background(), "user", "", 60); err == nil {
+		t.Fatalf("expected error for missing tokenID")
+	}
+	if _, err := svc.UpdateTTL(context.Background(), "user", "id", 0); err == nil {
+		t.Fatalf("expected error for invalid ttl")
+	}
+}
+
+func TestServiceDeleteSuccess(t *testing.T) {
+	repo := newMemoryRepo()
+	svc := NewService(repo)
+
+	token := &model.UserToken{
+		ID:        "token-3",
+		UserID:    "user-1",
+		Token:     "value",
+		ExpiresAt: time.Now().UTC().Add(time.Hour),
+		CreatedAt: time.Now().UTC(),
+	}
+	repo.tokens[token.ID] = token
+
+	if err := svc.Delete(context.Background(), token.UserID, token.ID); err != nil {
+		t.Fatalf("Delete returned error: %v", err)
+	}
+	if _, ok := repo.tokens[token.ID]; ok {
+		t.Fatalf("token was not removed from repository")
+	}
+}
+
+func TestServiceDeleteForbidden(t *testing.T) {
+	repo := newMemoryRepo()
+	svc := NewService(repo)
+
+	token := &model.UserToken{
+		ID:        "token-4",
+		UserID:    "owner",
+		Token:     "value",
+		ExpiresAt: time.Now().UTC().Add(time.Hour),
+		CreatedAt: time.Now().UTC(),
+	}
+	repo.tokens[token.ID] = token
+
+	if err := assertError(t, svc.Delete(context.Background(), "other", token.ID), ErrForbidden); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := repo.tokens[token.ID]; !ok {
+		t.Fatalf("token should remain after forbidden delete")
+	}
+}
+
+func TestServiceDeleteNotFound(t *testing.T) {
+	repo := newMemoryRepo()
+	svc := NewService(repo)
+
+	if err := assertError(t, svc.Delete(context.Background(), "user", "missing"), ErrNotFound); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestServiceDeleteValidation(t *testing.T) {
+	repo := newMemoryRepo()
+	svc := NewService(repo)
+
+	if err := svc.Delete(context.Background(), "", "id"); err == nil {
+		t.Fatalf("expected error for missing userID")
+	}
+	if err := svc.Delete(context.Background(), "user", ""); err == nil {
+		t.Fatalf("expected error for missing tokenID")
+	}
+}
+
+type memoryRepo struct {
+	tokens map[string]*model.UserToken
+}
+
+func newMemoryRepo() *memoryRepo {
+	return &memoryRepo{
+		tokens: make(map[string]*model.UserToken),
+	}
+}
+
+func (r *memoryRepo) CreateToken(_ context.Context, token *model.UserToken) error {
+	r.tokens[token.ID] = token
+	return nil
+}
+
+func (r *memoryRepo) GetTokenByID(_ context.Context, id string) (*model.UserToken, error) {
+	token, ok := r.tokens[id]
+	if !ok {
+		return nil, ErrNotFound
+	}
+	return token, nil
+}
+
+func (r *memoryRepo) UpdateToken(_ context.Context, token *model.UserToken) error {
+	if _, ok := r.tokens[token.ID]; !ok {
+		return ErrNotFound
+	}
+	r.tokens[token.ID] = token
+	return nil
+}
+
+func (r *memoryRepo) DeleteToken(_ context.Context, id string) error {
+	if _, ok := r.tokens[id]; !ok {
+		return ErrNotFound
+	}
+	delete(r.tokens, id)
+	return nil
+}
+
+func assertError(t *testing.T, err error, expected error) error {
+	t.Helper()
+	if err == nil {
+		return errors.New("expected error, got nil")
+	}
+	if !errors.Is(err, expected) {
+		return errors.New("unexpected error: " + err.Error())
+	}
+	return nil
+}
