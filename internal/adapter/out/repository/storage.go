@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 
-	"gorm.io/gorm"
+	"phone-tokens/internal/model"
+	"phone-tokens/internal/service/tokens"
+	"phone-tokens/internal/service/users"
 
-	"phone_token_system/internal/model"
-	"phone_token_system/internal/service/tokens"
-	"phone_token_system/internal/service/users"
+	"gorm.io/gorm"
 )
 
 type PostgresRepository struct {
@@ -93,4 +93,51 @@ func (r *Storage) DeleteToken(ctx context.Context, id string) error {
 		return tokens.ErrNotFound
 	}
 	return nil
+}
+
+func (r *Storage) SaveCsrRequest(ctx context.Context, request model.CsrRequest) (model.CsrRequest, error) {
+	err := r.db.WithContext(ctx).Save(&request).Error
+	if err != nil {
+		return model.CsrRequest{}, err
+	}
+	return request, nil
+}
+
+func (r *Storage) GetCsrRequest(ctx context.Context, ID int) (*model.CsrRequest, error) {
+	var request model.CsrRequest
+	err := r.db.WithContext(ctx).First(&request, "id = ?", ID).Error
+	return &request, err
+}
+
+func (r *Storage) UpdateCsrStatus(ctx context.Context, ID int, status string) error {
+	var request model.CsrRequest
+	err := r.db.WithContext(ctx).First(&request, "id = ?", ID).Error
+	if err != nil {
+		return err
+	}
+
+	request.Status = status
+	return r.db.WithContext(ctx).Save(&request).Error
+}
+
+func (r *Storage) GetCsrRequests(ctx context.Context) ([]model.CsrRequest, error) {
+	requests := []model.CsrRequest{}
+	err := r.db.WithContext(ctx).Find(&requests).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return requests, nil
+}
+
+func (r *Storage) SaveAgentInfo(ctx context.Context, info model.ExternalAgentInfo) error {
+	err := r.db.WithContext(ctx).Save(&info).Error
+	return err
+}
+
+func (r *Storage) GetAgentInfo(ctx context.Context, csrID int) (*model.ExternalAgentInfo, error) {
+	var info model.ExternalAgentInfo
+	err := r.db.WithContext(ctx).First(&info, "csr_id = ?", csrID).Error
+	return &info, err
 }

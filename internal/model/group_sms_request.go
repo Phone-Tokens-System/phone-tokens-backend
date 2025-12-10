@@ -2,7 +2,7 @@ package model
 
 /*
 *
-struct for mass-request for sms.
+struct for mass-request for sms_service.
 a lot of clients - one text
 */
 type GroupSMSRequest struct {

@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"net/http"
 	"phone-tokens/internal/adapter/dto"
-	"phone-tokens/internal/sms_service/model"
-	"phone-tokens/internal/sms_service/service"
+	"phone-tokens/internal/model"
+	"phone-tokens/internal/service/sms_service"
 )
 
 type smsHandler struct {
-	smsService *service.SmsService
+	smsService *sms_service.SmsService
 }
 
 func (h *smsHandler) sendSMS(w http.ResponseWriter, req *http.Request) {
@@ -46,6 +46,17 @@ func (h *smsHandler) checkStatus(w http.ResponseWriter, req *http.Request) {
 	}
 
 	err = json.NewEncoder(w).Encode(status)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (h *smsHandler) getSmsList(w http.ResponseWriter, req *http.Request) {
+	smsList, err := h.smsService.GetSmsList()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	err = json.NewEncoder(w).Encode(smsList)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

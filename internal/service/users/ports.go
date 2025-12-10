@@ -3,7 +3,7 @@ package users
 import (
 	"context"
 
-	"phone_token_system/internal/model"
+	"phone-tokens/internal/model"
 )
 
 type Repository interface {

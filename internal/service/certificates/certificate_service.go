@@ -1,4 +1,4 @@
-package service
+package certificates
 
 import (
 	"context"

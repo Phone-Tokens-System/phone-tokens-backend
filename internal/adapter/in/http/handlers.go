@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"time"
 
-	"phone_token_system/internal/model"
-	"phone_token_system/internal/service/tokens"
-	"phone_token_system/internal/service/users"
+	"phone-tokens/internal/model"
+	"phone-tokens/internal/service/tokens"
+	"phone-tokens/internal/service/users"
 )
 
 type Handler struct {

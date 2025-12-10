@@ -6,17 +6,20 @@ import (
 	"os/signal"
 	"syscall"
 
-	server "phone_token_system/internal/adapter/in"
-	"phone_token_system/internal/app"
+	server "phone-tokens/internal/adapter/in"
+	"phone-tokens/internal/app"
 )
 
 // Entry point for the monolithic HTTP server.
 func main() {
-	cfg := app.LoadConfig()
+	cfg, err := app.LoadConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	userSvc, tokenSvc, err := app.BuildService(cfg)
 	if err != nil {
-		log.Fatalf("failed to initialize service: %v", err)
+		log.Fatalf("failed to initialize sms_service: %v", err)
 	}
 
 	httpServer, err := server.NewHTTPServer(cfg.HTTPPort, cfg.JWTSecret, userSvc, tokenSvc)

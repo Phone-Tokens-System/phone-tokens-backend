@@ -7,9 +7,9 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"phone_token_system/internal/adapter/out/repository"
-	"phone_token_system/internal/service/tokens"
-	"phone_token_system/internal/service/users"
+	"phone-tokens/internal/adapter/out/repository"
+	"phone-tokens/internal/service/tokens"
+	"phone-tokens/internal/service/users"
 )
 
 func BuildService(cfg Config) (users.Service, tokens.Service, error) {

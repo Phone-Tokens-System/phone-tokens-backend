@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"phone_token_system/internal/model"
+	"phone-tokens/internal/model"
 )
 
 type service struct {

@@ -4,9 +4,9 @@ import (
 	"errors"
 	"net/http"
 
-	httpadapter "phone_token_system/internal/adapter/in/http"
-	"phone_token_system/internal/service/tokens"
-	"phone_token_system/internal/service/users"
+	httpadapter "phone-tokens/internal/adapter/in/http"
+	"phone-tokens/internal/service/tokens"
+	"phone-tokens/internal/service/users"
 )
 
 // NewHTTPServer создаёт HTTP‑сервер поверх доменного сервиса.

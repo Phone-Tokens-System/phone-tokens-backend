@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 
-	"phone_token_system/internal/model"
+	"phone-tokens/internal/model"
 )
 
 var (

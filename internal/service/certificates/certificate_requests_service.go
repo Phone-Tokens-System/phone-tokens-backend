@@ -1,9 +1,9 @@
-package service
+package certificates
 
 import (
 	"context"
 	"phone-tokens/internal/adapter/dto"
-	"phone-tokens/internal/certificates/model"
+	"phone-tokens/internal/model"
 )
 
 func (s *CertificateService) AcceptCertificateRequest(ctx context.Context, requestDTO dto.CSRRequest) (int, error) {

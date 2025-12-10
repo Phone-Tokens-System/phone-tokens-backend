@@ -3,7 +3,7 @@ package tokens
 import (
 	"context"
 
-	"phone_token_system/internal/model"
+	"phone-tokens/internal/model"
 )
 
 // Repository defines storage operations for user tokens.

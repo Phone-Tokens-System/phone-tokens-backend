@@ -1,4 +1,4 @@
-package service
+package certificates
 
 import (
 	"bytes"
@@ -13,7 +13,7 @@ import (
 	"math/big"
 	"os"
 	"phone-tokens/internal/adapter/out/repository"
-	"phone-tokens/internal/certificates/model"
+	"phone-tokens/internal/model"
 	"time"
 
 	"github.com/google/uuid"
@@ -40,29 +40,9 @@ func NewCertificateService() (*CertificateService, error) {
 		CAKeyPem:         keyFile,
 		CACertificatePem: certFile,
 	}, nil
-	//cert, err := x509.ParseCertificate(certFile)
-	//
-	//if err != nil {
-	//	return nil, err
-	//}
-	//
-	//keyFile, err := os.ReadFile("key.pem")
-	//if err != nil {
-	//	fmt.Println(err)
-	//	return nil, err
-	//}
-	//key, err := x509.ParseECPrivateKey(keyFile)
-	//if err != nil {
-	//	fmt.Println(err)
-	//	return nil, err
-	//}
-	//return &CertificateService{
-	//	CAKey:         key,
-	//	CACertificate: cert,
-	//}, nil
 }
 
-func CreateOurCert() error {
+func createOurCert() error {
 	ca := &x509.Certificate{
 		SerialNumber: big.NewInt(2025),
 		Subject: pkix.Name{
@@ -112,7 +92,7 @@ func CreateOurCert() error {
 	return nil
 }
 
-func (s *CertificateService) ParseCertFromPem(certFile []byte) (*x509.Certificate, error) {
+func (s *CertificateService) parseCertFromPem(certFile []byte) (*x509.Certificate, error) {
 	cert, err := x509.ParseCertificate(certFile)
 	if err != nil {
 		return nil, err
@@ -120,7 +100,7 @@ func (s *CertificateService) ParseCertFromPem(certFile []byte) (*x509.Certificat
 	return cert, nil
 }
 
-func (s *CertificateService) ParseKeyFromPem(keyFile []byte) (*ecdsa.PrivateKey, error) {
+func (s *CertificateService) parseKeyFromPem(keyFile []byte) (*ecdsa.PrivateKey, error) {
 	key, err := x509.ParseECPrivateKey(keyFile)
 	if err != nil {
 		fmt.Println(err)
@@ -138,12 +118,12 @@ func (s *CertificateService) signCertificateForAgent(ctx context.Context, block 
 		fmt.Println(err)
 		return nil, err
 	}
-	certCA, err := s.ParseCertFromPem(s.CACertificatePem)
+	certCA, err := s.parseCertFromPem(s.CACertificatePem)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
 	}
-	keyCA, err := s.ParseKeyFromPem(s.CAKeyPem)
+	keyCA, err := s.parseKeyFromPem(s.CAKeyPem)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err

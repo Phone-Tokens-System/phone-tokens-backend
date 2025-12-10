@@ -4,15 +4,15 @@ import (
 	"encoding/json"
 	"net/http"
 	"phone-tokens/internal/adapter/dto"
-	"phone-tokens/internal/certificates/service"
+	"phone-tokens/internal/service/certificates"
 	"strconv"
 )
 
 type AgentHandler struct {
-	CertificateService *service.CertificateService
+	CertificateService *certificates.CertificateService
 }
 
-func NewHandler(certService *service.CertificateService) *AgentHandler {
+func NewHandler(certService *certificates.CertificateService) *AgentHandler {
 	return &AgentHandler{certService}
 }
 
