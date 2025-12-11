@@ -51,7 +51,7 @@ func (h *smsHandler) checkStatus(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (h *smsHandler) getSmsList(w http.ResponseWriter, req *http.Request) {
+func (h *smsHandler) getSmsList(w http.ResponseWriter) {
 	smsList, err := h.smsService.GetSmsList()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

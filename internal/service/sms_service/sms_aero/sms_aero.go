@@ -18,25 +18,9 @@ type AeroSmsResponse struct {
 	err    error
 }
 
-func (r *AeroSmsResponse) GetID() string {
-	return strconv.Itoa(r.sms.Id)
-}
-
-func (r *AeroSmsResponse) IsSuccess() bool {
-	return r.err == nil
-}
-
 type AeroSmsElem struct {
 	smsaero_golang.SendSms
 	dateAnswer int
-}
-
-type AeroSmsStatus struct {
-	status smsaero_golang.HlrCheck
-}
-
-func (r *AeroSmsStatus) GetStatus() string {
-	return r.status.ExtendHlrStatus
 }
 
 // AeroService

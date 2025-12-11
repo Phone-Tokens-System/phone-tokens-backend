@@ -41,6 +41,7 @@ func (s *SmsService) SendSms(sms model.SmsRequest) (model.SmsResponse, error) {
 	if err != nil {
 		return model.SmsResponse{}, err
 	}
+	sendSms.ServiceName = sms.ServiceName
 	return sendSms, nil
 }
 
