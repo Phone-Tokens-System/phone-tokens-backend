@@ -5,8 +5,8 @@ import (
 )
 
 func RegisterRoutes(mux *http.ServeMux, h *Handler, authCfg AuthConfig) {
-	mux.HandleFunc("POST /api/v1/register", h.Register)
-	mux.HandleFunc("POST /api/v1/login", h.Login)
+	mux.HandleFunc("POST /api/v1/register", h.Users.Register)
+	mux.HandleFunc("POST /api/v1/login", h.Users.Login)
 
 	authMiddleware := AuthMiddleware(authCfg)
 
@@ -25,7 +25,9 @@ func RegisterRoutes(mux *http.ServeMux, h *Handler, authCfg AuthConfig) {
 	}))))
 
 	// Issue user tokens (requires authentication).
-	mux.Handle("/api/v1/tokens", authMiddleware(http.HandlerFunc(h.CreateToken)))
-	mux.Handle("PATCH /api/v1/tokens/{tokenID}", authMiddleware(http.HandlerFunc(h.UpdateTokenTTL)))
-	mux.Handle("DELETE /api/v1/tokens/{tokenID}", authMiddleware(http.HandlerFunc(h.DeleteToken)))
+	mux.Handle("/api/v1/tokens", authMiddleware(http.HandlerFunc(h.Tokens.CreateToken)))
+	mux.Handle("PATCH /api/v1/tokens/{tokenID}", authMiddleware(http.HandlerFunc(h.Tokens.UpdateTokenTTL)))
+	mux.Handle("DELETE /api/v1/tokens/{tokenID}", authMiddleware(http.HandlerFunc(h.Tokens.DeleteToken)))
+	mux.Handle("PATCH /api/v1/tokens/{tokenID}/freeze", authMiddleware(http.HandlerFunc(h.Tokens.FreezeToken)))
+	mux.Handle("PATCH /api/v1/tokens/{tokenID}/unfreeze", authMiddleware(http.HandlerFunc(h.Tokens.UnfreezeToken)))
 }

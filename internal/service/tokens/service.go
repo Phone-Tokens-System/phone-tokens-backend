@@ -5,6 +5,8 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -16,16 +18,33 @@ type service struct {
 	repo Repository
 }
 
+const DefaultTokenName = "default token"
+
+var DefaultTokenPermissions = []model.TokenPermission{
+	model.TokenPermissionSMS,
+	model.TokenPermissionCalls,
+}
+
 func NewService(repo Repository) Service {
 	return &service{repo: repo}
 }
 
-func (s *service) Issue(ctx context.Context, userID string, ttlSeconds int64) (*model.UserToken, error) {
-	if ttlSeconds <= 0 {
+func (s *service) Issue(ctx context.Context, input IssueInput) (*model.UserToken, error) {
+	if input.TTLSeconds <= 0 {
 		return nil, errors.New("ttlSeconds must be greater than zero")
 	}
-	if userID == "" {
+	if input.UserID == "" {
 		return nil, errors.New("userID is required")
+	}
+
+	name := strings.TrimSpace(input.Name)
+	if name == "" {
+		name = DefaultTokenName
+	}
+
+	perms, err := normalizePermissions(input.Permissions)
+	if err != nil {
+		return nil, err
 	}
 
 	value, err := generateRandomToken(32)
@@ -35,11 +54,14 @@ func (s *service) Issue(ctx context.Context, userID string, ttlSeconds int64) (*
 
 	now := time.Now().UTC()
 	token := &model.UserToken{
-		ID:        uuid.NewString(),
-		UserID:    userID,
-		Token:     value,
-		ExpiresAt: now.Add(time.Duration(ttlSeconds) * time.Second),
-		CreatedAt: now,
+		ID:          uuid.NewString(),
+		UserID:      input.UserID,
+		Token:       value,
+		Name:        name,
+		Permissions: perms,
+		Status:      model.TokenStatusActive,
+		ExpiresAt:   now.Add(time.Duration(input.TTLSeconds) * time.Second),
+		CreatedAt:   now,
 	}
 
 	if err := s.repo.CreateToken(ctx, token); err != nil {
@@ -78,6 +100,34 @@ func (s *service) UpdateTTL(ctx context.Context, userID, tokenID string, ttlSeco
 	return token, nil
 }
 
+func (s *service) SetStatus(ctx context.Context, userID, tokenID string, status model.TokenStatus) (*model.UserToken, error) {
+	if userID == "" {
+		return nil, errors.New("userID is required")
+	}
+	if tokenID == "" {
+		return nil, errors.New("tokenID is required")
+	}
+	if err := validateStatus(status); err != nil {
+		return nil, err
+	}
+
+	token, err := s.repo.GetTokenByID(ctx, tokenID)
+	if err != nil {
+		return nil, err
+	}
+	if token.UserID != userID {
+		return nil, ErrForbidden
+	}
+
+	token.Status = status
+
+	if err := s.repo.UpdateToken(ctx, token); err != nil {
+		return nil, err
+	}
+
+	return token, nil
+}
+
 func (s *service) Delete(ctx context.Context, userID, tokenID string) error {
 	if userID == "" {
 		return errors.New("userID is required")
@@ -95,6 +145,46 @@ func (s *service) Delete(ctx context.Context, userID, tokenID string) error {
 	}
 
 	return s.repo.DeleteToken(ctx, tokenID)
+}
+
+func normalizePermissions(perms []model.TokenPermission) ([]model.TokenPermission, error) {
+	if len(perms) == 0 {
+		return append([]model.TokenPermission(nil), DefaultTokenPermissions...), nil
+	}
+
+	seen := make(map[model.TokenPermission]struct{})
+	result := make([]model.TokenPermission, 0, len(perms))
+
+	for _, perm := range perms {
+		if !isValidPermission(perm) {
+			return nil, fmt.Errorf("%w: %s", ErrInvalidPermission, perm)
+		}
+		if _, ok := seen[perm]; ok {
+			continue
+		}
+		seen[perm] = struct{}{}
+		result = append(result, perm)
+	}
+
+	return result, nil
+}
+
+func isValidPermission(perm model.TokenPermission) bool {
+	switch perm {
+	case model.TokenPermissionSMS, model.TokenPermissionCalls:
+		return true
+	default:
+		return false
+	}
+}
+
+func validateStatus(status model.TokenStatus) error {
+	switch status {
+	case model.TokenStatusActive, model.TokenStatusFrozen:
+		return nil
+	default:
+		return fmt.Errorf("%w: %s", ErrInvalidStatus, status)
+	}
 }
 
 func generateRandomToken(nBytes int) (string, error) {
