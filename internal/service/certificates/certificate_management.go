@@ -150,7 +150,7 @@ func (s *CertificateService) signCertificateForAgent(ctx context.Context, block 
 		BasicConstraintsValid: true,
 	}
 
-	cert, err := x509.CreateCertificate(rand.Reader, serviceCert, certCA, keyCA.PublicKey, keyCA)
+	cert, err := x509.CreateCertificate(rand.Reader, serviceCert, certCA, CSR.PublicKey, keyCA)
 
 	certPem := new(bytes.Buffer)
 	err = pem.Encode(certPem, &pem.Block{

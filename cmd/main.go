@@ -1,6 +1,9 @@
 package main
 
-import "phone-tokens/internal/service/certificates"
+import (
+	"log"
+	"phone-tokens/internal/service/certificates"
+)
 
 // Entry point for the monolithic HTTP server.
 func main() {
@@ -37,9 +40,8 @@ func main() {
 	//}
 	//
 	//log.Println("monolith stopped")
-	cert := certificates.CertificateService{
-		CAKeyPem:         nil,
-		CACertificatePem: nil,
-		Storage:          nil,
+	certService, err := certificates.NewCertificateService()
+	if err != nil {
+		log.Fatal(err)
 	}
 }

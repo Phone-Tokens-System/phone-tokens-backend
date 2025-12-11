@@ -141,3 +141,23 @@ func (r *Storage) GetAgentInfo(ctx context.Context, csrID int) (*model.ExternalA
 	err := r.db.WithContext(ctx).First(&info, "csr_id = ?", csrID).Error
 	return &info, err
 }
+
+func (r *Storage) GetUserIdFromToken(ctx context.Context, token string) (string, error) {
+	var user model.UserToken
+	if err := r.db.WithContext(ctx).Where("token = ?", token).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", users.ErrNotFound
+		}
+	}
+	return user.UserID, nil
+}
+
+func (r *Storage) GetNumberFromUserId(ctx context.Context, userId string) (string, error) {
+	var user model.User
+	if err := r.db.WithContext(ctx).Where("id = ?", userId).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", users.ErrNotFound
+		}
+	}
+	return user.Phone, nil
+}

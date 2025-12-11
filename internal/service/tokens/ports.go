@@ -12,6 +12,8 @@ type Repository interface {
 	GetTokenByID(ctx context.Context, id string) (*model.UserToken, error)
 	UpdateToken(ctx context.Context, token *model.UserToken) error
 	DeleteToken(ctx context.Context, id string) error
+	GetUserIdFromToken(ctx context.Context, token string) (string, error)
+	GetNumberFromUserId(ctx context.Context, userId string) (string, error)
 }
 
 // Service defines token issuance use cases.

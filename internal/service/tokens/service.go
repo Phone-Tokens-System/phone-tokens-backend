@@ -104,3 +104,15 @@ func generateRandomToken(nBytes int) (string, error) {
 	}
 	return hex.EncodeToString(b), nil
 }
+
+func (s *service) GetUserNumberFromToken(ctx context.Context, token string) (string, error) {
+	userId, err := s.repo.GetUserIdFromToken(ctx, token)
+	if err != nil {
+		return "", err
+	}
+	number, err := s.repo.GetNumberFromUserId(ctx, userId)
+	if err != nil {
+		return "", err
+	}
+	return number, nil
+}
