@@ -1,6 +1,10 @@
 package model
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type TokenPermission string
 
@@ -20,6 +24,7 @@ type UserToken struct {
 	ID          string            `json:"id" gorm:"column:id;type:uuid;primaryKey"`
 	UserID      string            `json:"user_id" gorm:"column:user_id;type:uuid;index;not null"`
 	Token       string            `json:"token" gorm:"column:token;not null"`
+	AgentId     uuid.UUID         `json:"agent_id" gorm:"column:agent_id;not null"`
 	Name        string            `json:"name" gorm:"column:name;not null"`
 	Permissions []TokenPermission `json:"permissions" gorm:"column:permissions;type:text[];not null"`
 	Status      TokenStatus       `json:"status" gorm:"column:status;type:text;not null"`
