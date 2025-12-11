@@ -7,10 +7,10 @@ import "github.com/google/uuid"
 request to send sms_service to one user.
 */
 type SmsRequest struct {
-	ServiceName  string `json:"service_name"`
-	Certificate  []byte `json:"certificate"`
-	ClientNumber int    `json:"client_number"`
-	Text         string `json:"text"`
+	ServiceName string `json:"service_name"`
+	Certificate []byte `json:"certificate"`
+	ClientToken string `json:"client_token"`
+	Text        string `json:"text"`
 }
 
 type SmsResponse struct {

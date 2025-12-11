@@ -24,23 +24,14 @@ type smsHandler struct {
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /sms/send [post]
 func (h *smsHandler) sendSMS(w http.ResponseWriter, req *http.Request) {
-	var request dto.SmsReqFromAgent
+	var request model.SmsRequest
 	err := json.NewDecoder(req.Body).Decode(&request)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	//number := ConvertTokenToNumber
-
-	smsRequestNumber := model.SmsRequest{
-		ServiceName:  request.ServiceName,
-		Certificate:  request.Certificate,
-		ClientNumber: 0,
-		Text:         request.Text,
-	}
-
-	sms, err := h.smsService.SendSms(smsRequestNumber)
+	sms, err := h.smsService.SendSms(req.Context(), request)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

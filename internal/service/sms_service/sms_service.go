@@ -1,10 +1,13 @@
 package sms_service
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"phone-tokens/internal/model"
 	"phone-tokens/internal/service/certificates"
+	"phone-tokens/internal/service/tokens"
+	"strconv"
 )
 
 // SmsService
@@ -12,15 +15,16 @@ import (
 type SmsService struct {
 	CertificateService certificates.CertificateService
 	SmsAdapter         SmsAdapter
+	TokenService       tokens.Service
 }
 
-func NewSmsService(cs certificates.CertificateService, adapter SmsAdapter) *SmsService {
-	return &SmsService{cs, adapter}
+func NewSmsService(cs certificates.CertificateService, adapter SmsAdapter, tokens tokens.Service) *SmsService {
+	return &SmsService{cs, adapter, tokens}
 }
 
 // SendSms
 // Отправление смс после проверки сертификата и разрешений по токену
-func (s *SmsService) SendSms(sms model.SmsRequest) (model.SmsResponse, error) {
+func (s *SmsService) SendSms(ctx context.Context, sms model.SmsRequest) (model.SmsResponse, error) {
 	err := s.CertificateService.VerifyCertificate(sms.Certificate)
 	if err != nil {
 		return model.SmsResponse{}, fmt.Errorf("certificate failed verification. %w: ", err)
@@ -37,10 +41,21 @@ func (s *SmsService) SendSms(sms model.SmsRequest) (model.SmsResponse, error) {
 		return model.SmsResponse{}, fmt.Errorf("permission denied")
 	}
 
-	sendSms, err := s.SmsAdapter.SendSms(sms.ClientNumber, sms.Text)
+	number, err := s.TokenService.GetUserNumberFromToken(ctx, sms.ClientToken)
+	if err != nil {
+		return model.SmsResponse{}, fmt.Errorf("failed to get user number from token. %w: ", err)
+	}
+
+	numberInt, err := strconv.Atoi(number)
+	if err != nil {
+		return model.SmsResponse{}, fmt.Errorf("failed to get user number from token. %w: ", err)
+	}
+
+	sendSms, err := s.SmsAdapter.SendSms(numberInt, sms.Text)
 	if err != nil {
 		return model.SmsResponse{}, err
 	}
+
 	sendSms.ServiceName = sms.ServiceName
 	return sendSms, nil
 }

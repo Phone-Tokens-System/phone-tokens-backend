@@ -21,4 +21,5 @@ type Service interface {
 	Issue(ctx context.Context, userID string, ttlSeconds int64) (*model.UserToken, error)
 	UpdateTTL(ctx context.Context, userID, tokenID string, ttlSeconds int64) (*model.UserToken, error)
 	Delete(ctx context.Context, userID, tokenID string) error
+	GetUserNumberFromToken(ctx context.Context, token string) (string, error)
 }
