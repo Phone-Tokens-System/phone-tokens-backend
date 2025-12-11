@@ -3,6 +3,9 @@ package app
 import (
 	"errors"
 	"log"
+	"phone-tokens/internal/service/certificates"
+	"phone-tokens/internal/service/sms_service"
+	"phone-tokens/internal/service/sms_service/sms_aero"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -12,31 +15,38 @@ import (
 	"phone-tokens/internal/service/users"
 )
 
-func BuildService(cfg Config) (users.Service, tokens.Service, error) {
+type Services struct {
+	User  users.Service
+	Token tokens.Service
+	SMS   *sms_service.SmsService
+	Cert  *certificates.CertificateService
+}
+
+func BuildService(cfg Config) (*Services, error) {
 	if cfg.DatabaseURL == "" {
-		return nil, nil, errors.New("DATABASE_URL is required")
+		return nil, errors.New("DATABASE_URL is required")
 	}
 	if cfg.JWTSecret == "" {
-		return nil, nil, errors.New("JWT_SECRET is required")
+		return nil, errors.New("JWT_SECRET is required")
 	}
 	if cfg.JWTExpiresInSec <= 0 {
-		return nil, nil, errors.New("JWT_EXPIRES_IN_SEC must be greater than zero")
+		return nil, errors.New("JWT_EXPIRES_IN_SEC must be greater than zero")
 	}
 
 	log.Printf("initializing database connection")
 	db, errInit := gorm.Open(postgres.Open(cfg.DatabaseURL), &gorm.Config{})
 	if errInit != nil {
-		return nil, nil, errInit
+		return nil, errInit
 	}
 
 	sqlDB, err := db.DB()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	log.Printf("applying database migrations with goose")
 	if err := MigrateDB(sqlDB, "database"); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	repo := repository.NewStorage(db)
@@ -48,5 +58,20 @@ func BuildService(cfg Config) (users.Service, tokens.Service, error) {
 
 	tokenSvc := tokens.NewService(repo)
 
-	return userSvc, tokenSvc, nil
+	certSvc, err := certificates.NewCertificateService()
+	if err != nil {
+		return nil, err
+	}
+
+	smsAdapter := sms_aero.NewAeroService(cfg.APIEmail, cfg.APIKey) // интерфейсную развязку сюда потом
+
+	smsSvc := sms_service.NewSmsService(*certSvc, smsAdapter, tokenSvc)
+
+	services := Services{
+		User:  userSvc,
+		Token: tokenSvc,
+		SMS:   smsSvc,
+		Cert:  certSvc,
+	}
+	return &services, nil
 }

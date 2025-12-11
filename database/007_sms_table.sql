@@ -1,3 +1,4 @@
+-- +goose Up
 CREATE TABLE IF NOT EXISTS sms(
     id     BIGSERIAL  PRIMARY KEY,
     external_id BIGINT NOT NULL,
@@ -12,4 +13,7 @@ CREATE TABLE IF NOT EXISTS sms(
     date_created BIGINT,
     date_sent    BIGINT,
     raw          TEXT
-)
+);
+
+-- +goose Down
+DROP TABLE IF EXISTS sms

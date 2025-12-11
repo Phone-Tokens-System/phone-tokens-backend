@@ -206,3 +206,21 @@ func (s *service) GetUserNumberFromToken(ctx context.Context, token string) (str
 	}
 	return number, nil
 }
+
+func (s *service) CheckTokenPermission(ctx context.Context, token string, agentId uuid.UUID, perm model.TokenPermission) (bool, error) {
+	tokenObj, err := s.repo.GetTokenByToken(ctx, token)
+	if err != nil {
+		return false, err
+	}
+
+	if tokenObj.AgentId != agentId {
+		return false, ErrForbidden
+	}
+
+	for _, tokenPerm := range tokenObj.Permissions {
+		if tokenPerm == perm {
+			return true, nil
+		}
+	}
+	return false, nil
+}

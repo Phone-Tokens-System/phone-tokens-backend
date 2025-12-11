@@ -3,7 +3,6 @@ package sms_service
 import (
 	"context"
 	"fmt"
-	"math/big"
 	"phone-tokens/internal/model"
 	"phone-tokens/internal/service/certificates"
 	"phone-tokens/internal/service/tokens"
@@ -35,7 +34,7 @@ func (s *SmsService) SendSms(ctx context.Context, sms model.SmsRequest) (model.S
 		return model.SmsResponse{}, fmt.Errorf("certificate failed verification. %w: ", err)
 	}
 
-	res := s.CheckPermissions(*agentId)
+	res, err := s.TokenService.CheckTokenPermission(ctx, sms.ClientToken, agentId, model.TokenPermissionSMS)
 
 	if !res {
 		return model.SmsResponse{}, fmt.Errorf("permission denied")
@@ -58,10 +57,6 @@ func (s *SmsService) SendSms(ctx context.Context, sms model.SmsRequest) (model.S
 
 	sendSms.ServiceName = sms.ServiceName
 	return sendSms, nil
-}
-
-func (s *SmsService) CheckPermissions(agentId big.Int) bool {
-	return true // check permissions. maybe in another sms_service
 }
 
 // GetSmsStatus

@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"phone_token_system/internal/model"
-	"phone_token_system/internal/service/users"
+	"phone-tokens/internal/model"
+	"phone-tokens/internal/service/users"
 )
 
 type UserHandler struct {

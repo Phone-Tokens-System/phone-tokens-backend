@@ -1,0 +1,307 @@
+definitions:
+  dto.CSRRequest:
+    properties:
+      csr:
+        items:
+          type: integer
+        type: array
+      email:
+        type: string
+    type: object
+  dto.CertificateResponse:
+    properties:
+      certificate:
+        items:
+          type: integer
+        type: array
+      csr_id:
+        type: integer
+    type: object
+  dto.SmsId:
+    properties:
+      id:
+        type: integer
+    type: object
+  model.CsrRequest:
+    properties:
+      csr:
+        items:
+          type: integer
+        type: array
+      email:
+        type: string
+      id:
+        type: integer
+      service_name:
+        type: string
+      status:
+        type: string
+    type: object
+  model.SmsRequest:
+    properties:
+      certificate:
+        items:
+          type: integer
+        type: array
+      client_token:
+        type: string
+      service_name:
+        type: string
+      text:
+        type: string
+    type: object
+  model.SmsResponse:
+    properties:
+      cost:
+        type: number
+      date_created:
+        type: integer
+      date_sent:
+        type: integer
+      extend_status:
+        type: string
+      from:
+        type: string
+      id:
+        type: integer
+      number:
+        type: string
+      raw: {}
+      service_id:
+        type: string
+      service_name:
+        type: string
+      status:
+        type: integer
+      text:
+        type: string
+    type: object
+  model.SmsStatus:
+    properties:
+      extend_status:
+        type: string
+      number:
+        type: string
+      service_name:
+        type: string
+      status:
+        type: integer
+    type: object
+info:
+  contact: {}
+paths:
+  /admin/csr:
+    get:
+      consumes:
+      - application/json
+      description: Returns all pending Certificate Signing Requests
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of CSR requests
+          schema:
+            items:
+              $ref: '#/definitions/dto.CSRRequest'
+            type: array
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: List all pending CSR requests
+      tags:
+      - CSR
+  /admin/csr/approve:
+    post:
+      consumes:
+      - application/json
+      description: Approves a CSR request by its ID and signs the certificate
+      parameters:
+      - description: CSR Request ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Signed certificate
+          schema:
+            $ref: '#/definitions/model.CsrRequest'
+        "400":
+          description: Invalid ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Approve a CSR request
+      tags:
+      - CSR
+  /csr:
+    post:
+      consumes:
+      - application/json
+      description: Accepts a Certificate Signing Request from an agent
+      parameters:
+      - description: CSR Request payload
+        in: body
+        name: csr
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CSRRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Signed certificate
+          schema:
+            $ref: '#/definitions/dto.CertificateResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Accept a new CSR request
+      tags:
+      - CSR
+  /csr/signed:
+    get:
+      consumes:
+      - application/json
+      description: Returns the signed certificate for the given CSR ID
+      parameters:
+      - description: CSR ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Signed certificate
+          schema:
+            $ref: '#/definitions/dto.CertificateResponse'
+        "400":
+          description: Invalid CSR ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get signed certificate by CSR ID
+      tags:
+      - CSR
+  /sms/list:
+    get:
+      consumes:
+      - application/json
+      description: Returns the list of all sent SMS
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of sent SMS
+          schema:
+            items:
+              $ref: '#/definitions/model.SmsResponse'
+            type: array
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get all SMS
+      tags:
+      - SMS
+  /sms/send:
+    post:
+      consumes:
+      - application/json
+      description: Sends an SMS to the specified phone number
+      parameters:
+      - description: SMS request payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.SmsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Sent SMS details
+          schema:
+            $ref: '#/definitions/model.SmsResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Send an SMS
+      tags:
+      - SMS
+  /sms/status:
+    post:
+      consumes:
+      - application/json
+      description: Returns the status of an SMS by ID
+      parameters:
+      - description: SMS ID payload
+        in: body
+        name: smsId
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SmsId'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: SMS status details
+          schema:
+            $ref: '#/definitions/model.SmsStatus'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Check SMS status
+      tags:
+      - SMS
+swagger: "2.0"

@@ -1,4 +1,4 @@
-package in
+package http
 
 import (
 	"encoding/json"
@@ -12,7 +12,7 @@ type AgentHandler struct {
 	CertificateService *certificates.CertificateService
 }
 
-func NewHandler(certService *certificates.CertificateService) *AgentHandler {
+func NewAgentHandler(certService *certificates.CertificateService) *AgentHandler {
 	return &AgentHandler{certService}
 }
 

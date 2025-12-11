@@ -177,3 +177,13 @@ func (r *Storage) GetNumberFromUserId(ctx context.Context, userId string) (strin
 	}
 	return user.Phone, nil
 }
+
+func (r *Storage) GetTokenByToken(ctx context.Context, token string) (*model.UserToken, error) {
+	var tokenObj model.UserToken
+	if err := r.db.WithContext(ctx).Where("token = ?", token).First(&tokenObj).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, users.ErrNotFound
+		}
+	}
+	return &tokenObj, nil
+}

@@ -2,11 +2,16 @@ package http
 
 import (
 	"net/http"
+
+	_ "phone-tokens/docs"
+
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
-func RegisterRoutes(mux *http.ServeMux, h *Handler, authCfg AuthConfig) {
-	mux.HandleFunc("POST /api/v1/register", h.Users.Register)
-	mux.HandleFunc("POST /api/v1/login", h.Users.Login)
+func RegisterRoutes(mux *http.ServeMux, h Handlers, authCfg AuthConfig) {
+	mux.HandleFunc("POST /api/v1/register", h.User.Register)
+	mux.HandleFunc("POST /api/v1/login", h.User.Login)
+	mux.Handle("/swagger/", httpSwagger.WrapHandler)
 
 	authMiddleware := AuthMiddleware(authCfg)
 
@@ -25,9 +30,9 @@ func RegisterRoutes(mux *http.ServeMux, h *Handler, authCfg AuthConfig) {
 	}))))
 
 	// Issue user tokens (requires authentication).
-	mux.Handle("/api/v1/tokens", authMiddleware(http.HandlerFunc(h.Tokens.CreateToken)))
-	mux.Handle("PATCH /api/v1/tokens/{tokenID}", authMiddleware(http.HandlerFunc(h.Tokens.UpdateTokenTTL)))
-	mux.Handle("DELETE /api/v1/tokens/{tokenID}", authMiddleware(http.HandlerFunc(h.Tokens.DeleteToken)))
-	mux.Handle("PATCH /api/v1/tokens/{tokenID}/freeze", authMiddleware(http.HandlerFunc(h.Tokens.FreezeToken)))
-	mux.Handle("PATCH /api/v1/tokens/{tokenID}/unfreeze", authMiddleware(http.HandlerFunc(h.Tokens.UnfreezeToken)))
+	mux.Handle("/api/v1/tokens", authMiddleware(http.HandlerFunc(h.Token.CreateToken)))
+	mux.Handle("PATCH /api/v1/tokens/{tokenID}", authMiddleware(http.HandlerFunc(h.Token.UpdateTokenTTL)))
+	mux.Handle("DELETE /api/v1/tokens/{tokenID}", authMiddleware(http.HandlerFunc(h.Token.DeleteToken)))
+	mux.Handle("PATCH /api/v1/tokens/{tokenID}/freeze", authMiddleware(http.HandlerFunc(h.Token.FreezeToken)))
+	mux.Handle("PATCH /api/v1/tokens/{tokenID}/unfreeze", authMiddleware(http.HandlerFunc(h.Token.UnfreezeToken)))
 }

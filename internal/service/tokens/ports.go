@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"phone-tokens/internal/model"
+
+	"github.com/google/uuid"
 )
 
 // Repository defines storage operations for user tokens.
@@ -14,6 +16,7 @@ type Repository interface {
 	DeleteToken(ctx context.Context, id string) error
 	GetUserIdFromToken(ctx context.Context, token string) (string, error)
 	GetNumberFromUserId(ctx context.Context, userId string) (string, error)
+	GetTokenByToken(ctx context.Context, token string) (*model.UserToken, error)
 }
 
 type IssueInput struct {
@@ -30,4 +33,5 @@ type Service interface {
 	SetStatus(ctx context.Context, userID, tokenID string, status model.TokenStatus) (*model.UserToken, error)
 	Delete(ctx context.Context, userID, tokenID string) error
 	GetUserNumberFromToken(ctx context.Context, token string) (string, error)
+	CheckTokenPermission(ctx context.Context, token string, agentId uuid.UUID, perm model.TokenPermission) (bool, error)
 }

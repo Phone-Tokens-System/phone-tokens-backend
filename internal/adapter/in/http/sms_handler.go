@@ -1,4 +1,4 @@
-package in
+package http
 
 import (
 	"encoding/json"
@@ -8,8 +8,12 @@ import (
 	"phone-tokens/internal/service/sms_service"
 )
 
-type smsHandler struct {
+type SmsHandler struct {
 	smsService *sms_service.SmsService
+}
+
+func NewSmsHandler(smsService *sms_service.SmsService) *SmsHandler {
+	return &SmsHandler{smsService: smsService}
 }
 
 // SendSMS godoc
@@ -23,7 +27,7 @@ type smsHandler struct {
 // @Failure 400 {object} map[string]string "Invalid request"
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /sms/send [post]
-func (h *smsHandler) sendSMS(w http.ResponseWriter, req *http.Request) {
+func (h *SmsHandler) sendSMS(w http.ResponseWriter, req *http.Request) {
 	var request model.SmsRequest
 	err := json.NewDecoder(req.Body).Decode(&request)
 	if err != nil {
@@ -55,7 +59,7 @@ func (h *smsHandler) sendSMS(w http.ResponseWriter, req *http.Request) {
 // @Failure 400 {object} map[string]string "Invalid request"
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /sms/status [post]
-func (h *smsHandler) checkStatus(w http.ResponseWriter, req *http.Request) {
+func (h *SmsHandler) checkStatus(w http.ResponseWriter, req *http.Request) {
 	var smsId dto.SmsId
 	err := json.NewDecoder(req.Body).Decode(&smsId)
 	if err != nil {
@@ -79,10 +83,10 @@ func (h *smsHandler) checkStatus(w http.ResponseWriter, req *http.Request) {
 // @Tags SMS
 // @Accept json
 // @Produce json
-// @Success 200 {array} model.Sms "List of sent SMS"
+// @Success 200 {array} model.SmsResponse "List of sent SMS"
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /sms/list [get]
-func (h *smsHandler) getSmsList(w http.ResponseWriter) {
+func (h *SmsHandler) getSmsList(w http.ResponseWriter) {
 	smsList, err := h.smsService.GetSmsList()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

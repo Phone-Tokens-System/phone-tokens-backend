@@ -5,7 +5,10 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	"math/big"
+
+	"github.com/google/uuid"
 )
 
 func (s *CertificateService) GetSignedCertificateByCsrID(ctx context.Context, CsrID int) ([]byte, error) {
@@ -39,15 +42,36 @@ func (s *CertificateService) VerifyCertificate(cert []byte) error {
 	return nil
 }
 
-func (s *CertificateService) ExtractAgentId(cert []byte) (*big.Int, error) {
+func (s *CertificateService) ExtractAgentId(cert []byte) (uuid.UUID, error) {
 	certBytes, _ := pem.Decode(cert)
 	if certBytes == nil {
-		return nil, errors.New("failed to decode certificate")
+		return uuid.UUID{}, errors.New("failed to decode certificate")
 	}
 
 	certificate, err := x509.ParseCertificate(certBytes.Bytes)
 	if err != nil {
-		return nil, err
+		return uuid.UUID{}, err
 	}
-	return certificate.SerialNumber, nil
+
+	uuidId, err := SerialToUUID(certificate.SerialNumber)
+	if err != nil {
+		return uuid.UUID{}, err
+	}
+	return uuidId, nil
+}
+
+func SerialToUUID(serial *big.Int) (uuid.UUID, error) {
+	b := serial.Bytes()
+
+	if len(b) != 16 {
+		if len(b) < 16 {
+			padded := make([]byte, 16)
+			copy(padded[16-len(b):], b)
+			b = padded
+		} else {
+			return uuid.Nil, fmt.Errorf("invalid serial length: %d", len(b))
+		}
+	}
+
+	return uuid.FromBytes(b)
 }
