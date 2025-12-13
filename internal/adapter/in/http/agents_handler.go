@@ -2,6 +2,7 @@ package http
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"phone-tokens/internal/adapter/dto"
 	"phone-tokens/internal/service/certificates"
@@ -18,6 +19,7 @@ func NewAgentHandler(certService *certificates.CertificateService) *AgentHandler
 
 // AcceptCSRRequest godoc
 // @Summary Accept a new CSR request
+// @Security BearerAuth
 // @Description Accepts a Certificate Signing Request from an agent
 // @Tags CSR
 // @Accept json
@@ -26,7 +28,7 @@ func NewAgentHandler(certService *certificates.CertificateService) *AgentHandler
 // @Success 201 {object} dto.CertificateResponse "Signed certificate"
 // @Failure 400 {object} map[string]string "Invalid request"
 // @Failure 500 {object} map[string]string "Internal server error"
-// @Router /csr [post]
+// @Router  /api/v1/csr [post]
 func (h *AgentHandler) AcceptCSRRequest(w http.ResponseWriter, r *http.Request) {
 	var csr dto.CSRRequest
 
@@ -50,15 +52,69 @@ func (h *AgentHandler) AcceptCSRRequest(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+// UploadCSR godoc
+// @Summary Upload a Certificate Signing Request (CSR) file
+// @Description Accepts a CSR from an agent as a file upload
+// @Tags CSR
+// @Accept multipart/form-data
+// @Produce json
+// @Param csr formData file true "CSR file"
+// @Param email formData string true "Email of requester"
+// @Success 201 {object} dto.CertificateResponse "Signed certificate"
+// @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /api/v1/csr/upload [post]
+func (h *AgentHandler) UploadCSR(w http.ResponseWriter, r *http.Request) {
+	// Ограничим размер файла (например, 1MB)
+	err := r.ParseMultipartForm(1 << 20)
+	if err != nil {
+		return
+	}
+
+	file, _, err := r.FormFile("csr")
+	if err != nil {
+		http.Error(w, "CSR file is required", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	csrBytes, err := io.ReadAll(file)
+	if err != nil {
+		http.Error(w, "failed to read CSR file", http.StatusInternalServerError)
+		return
+	}
+
+	email := r.FormValue("email")
+	if email == "" {
+		http.Error(w, "email is required", http.StatusBadRequest)
+		return
+	}
+
+	// Передаем bytes в сервис
+	csr := dto.CSRRequest{
+		CSR:   string(csrBytes),
+		Email: email,
+	}
+
+	certificate, err := h.CertificateService.AcceptCertificateRequest(r.Context(), csr)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, certificate)
+}
+
 // ShowCSRRequests godoc
 // @Summary List all pending CSR requests
+// @Security BearerAuth
 // @Description Returns all pending Certificate Signing Requests
 // @Tags CSR
 // @Accept json
 // @Produce json
 // @Success 200 {array} dto.CSRRequest "List of CSR requests"
 // @Failure 500 {object} map[string]string "Internal server error"
-// @Router /admin/csr [get]
+// @Router /api/v1/admin/csr [get]
 func (h *AgentHandler) ShowCSRRequests(w http.ResponseWriter, r *http.Request) {
 	requests, err := h.CertificateService.GetCertificateRequests(r.Context())
 	if err != nil {
@@ -77,6 +133,7 @@ func (h *AgentHandler) ShowCSRRequests(w http.ResponseWriter, r *http.Request) {
 
 // ApproveCSRRequest godoc
 // @Summary Approve a CSR request
+// @Security BearerAuth
 // @Description Approves a CSR request by its ID and signs the certificate
 // @Tags CSR
 // @Accept json
@@ -85,7 +142,7 @@ func (h *AgentHandler) ShowCSRRequests(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} model.CsrRequest "Signed certificate"
 // @Failure 400 {object} map[string]string "Invalid ID"
 // @Failure 500 {object} map[string]string "Internal server error"
-// @Router /admin/csr/approve [post]
+// @Router /api/v1/admin/csr/approve/{id} [post]
 func (h *AgentHandler) ApproveCSRRequest(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
 	idInt, err := strconv.Atoi(id)
@@ -114,7 +171,7 @@ func (h *AgentHandler) ApproveCSRRequest(w http.ResponseWriter, r *http.Request)
 // @Success 200 {object} dto.CertificateResponse "Signed certificate"
 // @Failure 400 {object} map[string]string "Invalid CSR ID"
 // @Failure 500 {object} map[string]string "Internal server error"
-// @Router /csr/signed [get]
+// @Router /api/v1/csr/signed [get]
 func (h *AgentHandler) GetSignedCertificate(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
 	idInt, err := strconv.Atoi(id)
@@ -128,7 +185,7 @@ func (h *AgentHandler) GetSignedCertificate(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	resp := dto.CertificateResponse{
-		Certificate: cert,
+		Certificate: string(cert),
 		CsrId:       idInt,
 	}
 	w.Header().Set("Content-Type", "application/json")

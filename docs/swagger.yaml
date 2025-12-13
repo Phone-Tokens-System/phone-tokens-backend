@@ -2,24 +2,83 @@ definitions:
   dto.CSRRequest:
     properties:
       csr:
-        items:
-          type: integer
-        type: array
+        type: string
       email:
         type: string
     type: object
   dto.CertificateResponse:
     properties:
       certificate:
-        items:
-          type: integer
-        type: array
+        type: string
       csr_id:
         type: integer
     type: object
   dto.SmsId:
     properties:
       id:
+        type: integer
+    type: object
+  http.createTokenRequest:
+    properties:
+      name:
+        type: string
+      permissions:
+        items:
+          $ref: '#/definitions/model.TokenPermission'
+        type: array
+      ttl_seconds:
+        type: integer
+    type: object
+  http.loginRequest:
+    properties:
+      password:
+        type: string
+      phone:
+        type: string
+    type: object
+  http.loginResponse:
+    properties:
+      token:
+        type: string
+    type: object
+  http.registerRequest:
+    properties:
+      password:
+        type: string
+      phone:
+        type: string
+      role:
+        $ref: '#/definitions/model.Role'
+    type: object
+  http.registerResponse:
+    properties:
+      id:
+        type: string
+      phone:
+        type: string
+      role:
+        $ref: '#/definitions/model.Role'
+    type: object
+  http.tokenResponse:
+    properties:
+      expires_at:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      permissions:
+        items:
+          $ref: '#/definitions/model.TokenPermission'
+        type: array
+      status:
+        $ref: '#/definitions/model.TokenStatus'
+      token:
+        type: string
+    type: object
+  http.updateTokenRequest:
+    properties:
+      ttl_seconds:
         type: integer
     type: object
   model.CsrRequest:
@@ -37,12 +96,18 @@ definitions:
       status:
         type: string
     type: object
+  model.Role:
+    enum:
+    - admin
+    - user
+    type: string
+    x-enum-varnames:
+    - RoleAdmin
+    - RoleUser
   model.SmsRequest:
     properties:
       certificate:
-        items:
-          type: integer
-        type: array
+        type: string
       client_token:
         type: string
       service_name:
@@ -87,10 +152,26 @@ definitions:
       status:
         type: integer
     type: object
+  model.TokenPermission:
+    enum:
+    - sms
+    - calls
+    type: string
+    x-enum-varnames:
+    - TokenPermissionSMS
+    - TokenPermissionCalls
+  model.TokenStatus:
+    enum:
+    - active
+    - frozen
+    type: string
+    x-enum-varnames:
+    - TokenStatusActive
+    - TokenStatusFrozen
 info:
   contact: {}
 paths:
-  /admin/csr:
+  /api/v1/admin/csr:
     get:
       consumes:
       - application/json
@@ -110,10 +191,12 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - BearerAuth: []
       summary: List all pending CSR requests
       tags:
       - CSR
-  /admin/csr/approve:
+  /api/v1/admin/csr/approve/{id}:
     post:
       consumes:
       - application/json
@@ -143,10 +226,12 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - BearerAuth: []
       summary: Approve a CSR request
       tags:
       - CSR
-  /csr:
+  /api/v1/csr:
     post:
       consumes:
       - application/json
@@ -177,10 +262,12 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - BearerAuth: []
       summary: Accept a new CSR request
       tags:
       - CSR
-  /csr/signed:
+  /api/v1/csr/signed:
     get:
       consumes:
       - application/json
@@ -213,7 +300,125 @@ paths:
       summary: Get signed certificate by CSR ID
       tags:
       - CSR
-  /sms/list:
+  /api/v1/csr/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Accepts a CSR from an agent as a file upload
+      parameters:
+      - description: CSR file
+        in: formData
+        name: csr
+        required: true
+        type: file
+      - description: Email of requester
+        in: formData
+        name: email
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Signed certificate
+          schema:
+            $ref: '#/definitions/dto.CertificateResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Upload a Certificate Signing Request (CSR) file
+      tags:
+      - CSR
+  /api/v1/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates user with phone and password and returns a JWT token
+      parameters:
+      - description: User login payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.loginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: JWT token
+          schema:
+            $ref: '#/definitions/http.loginResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Invalid credentials
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Login a user
+      tags:
+      - User
+  /api/v1/register:
+    post:
+      consumes:
+      - application/json
+      description: Registers a new user with phone, password and role
+      parameters:
+      - description: User registration payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.registerRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User successfully registered
+          schema:
+            $ref: '#/definitions/http.registerResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Phone already used
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Register a new user
+      tags:
+      - User
+  /api/v1/sms/list:
     get:
       consumes:
       - application/json
@@ -236,7 +441,7 @@ paths:
       summary: Get all SMS
       tags:
       - SMS
-  /sms/send:
+  /api/v1/sms/send:
     post:
       consumes:
       - application/json
@@ -270,7 +475,7 @@ paths:
       summary: Send an SMS
       tags:
       - SMS
-  /sms/status:
+  /api/v1/sms/status:
     post:
       consumes:
       - application/json
@@ -304,4 +509,255 @@ paths:
       summary: Check SMS status
       tags:
       - SMS
+  /api/v1/tokens:
+    post:
+      consumes:
+      - application/json
+      description: Issues a persistent token for the authenticated user
+      parameters:
+      - description: Token request payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.createTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Token successfully issued
+          schema:
+            $ref: '#/definitions/http.tokenResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Issue a persistent token
+      tags:
+      - Token
+  /api/v1/tokens/{tokenID}:
+    delete:
+      description: Removes a token for the authenticated user
+      parameters:
+      - description: Token ID
+        in: path
+        name: tokenID
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Token not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete a token
+      tags:
+      - Token
+    patch:
+      consumes:
+      - application/json
+      description: Updates token expiration time for the authenticated user
+      parameters:
+      - description: Token ID
+        in: path
+        name: tokenID
+        required: true
+        type: string
+      - description: Update TTL request payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.updateTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token successfully updated
+          schema:
+            $ref: '#/definitions/http.tokenResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Token not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update token expiration
+      tags:
+      - Token
+  /api/v1/tokens/{tokenID}/freeze:
+    patch:
+      description: Sets token status to frozen
+      parameters:
+      - description: Token ID
+        in: path
+        name: tokenID
+        required: true
+        type: string
+      responses:
+        "200":
+          description: Token successfully frozen
+          schema:
+            $ref: '#/definitions/http.tokenResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Token not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Freeze a token
+      tags:
+      - Token
+  /api/v1/tokens/{tokenID}/unfreeze:
+    patch:
+      description: Sets token status to active
+      parameters:
+      - description: Token ID
+        in: path
+        name: tokenID
+        required: true
+        type: string
+      responses:
+        "200":
+          description: Token successfully unfrozen
+          schema:
+            $ref: '#/definitions/http.tokenResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Token not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Unfreeze a token
+      tags:
+      - Token
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer " followed by your JWT token
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

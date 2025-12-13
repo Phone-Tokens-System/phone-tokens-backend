@@ -24,12 +24,12 @@ func NewSmsService(cs certificates.CertificateService, adapter SmsAdapter, token
 // SendSms
 // Отправление смс после проверки сертификата и разрешений по токену
 func (s *SmsService) SendSms(ctx context.Context, sms model.SmsRequest) (model.SmsResponse, error) {
-	err := s.CertificateService.VerifyCertificate(sms.Certificate)
+	err := s.CertificateService.VerifyCertificate([]byte(sms.Certificate))
 	if err != nil {
 		return model.SmsResponse{}, fmt.Errorf("certificate failed verification. %w: ", err)
 	}
 
-	agentId, err := s.CertificateService.ExtractAgentId(sms.Certificate)
+	agentId, err := s.CertificateService.ExtractAgentId([]byte(sms.Certificate))
 	if err != nil {
 		return model.SmsResponse{}, fmt.Errorf("certificate failed verification. %w: ", err)
 	}

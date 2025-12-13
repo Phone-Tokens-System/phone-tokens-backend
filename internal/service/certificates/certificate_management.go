@@ -25,7 +25,7 @@ type CertificateService struct {
 	Storage          *repository.Storage `json:"storage"`
 }
 
-func NewCertificateService() (*CertificateService, error) {
+func NewCertificateService(storage *repository.Storage) (*CertificateService, error) {
 	certFile, err := os.ReadFile("cert.pem")
 	if err != nil {
 		fmt.Println(err)
@@ -39,6 +39,7 @@ func NewCertificateService() (*CertificateService, error) {
 	return &CertificateService{
 		CAKeyPem:         keyFile,
 		CACertificatePem: certFile,
+		Storage:          storage,
 	}, nil
 }
 
@@ -93,7 +94,11 @@ func createOurCert() error {
 }
 
 func (s *CertificateService) parseCertFromPem(certFile []byte) (*x509.Certificate, error) {
-	cert, err := x509.ParseCertificate(certFile)
+	certDer, _ := pem.Decode(certFile)
+	if certDer == nil {
+		return nil, fmt.Errorf("failed to decode PEM certificate")
+	}
+	cert, err := x509.ParseCertificate(certDer.Bytes)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +106,11 @@ func (s *CertificateService) parseCertFromPem(certFile []byte) (*x509.Certificat
 }
 
 func (s *CertificateService) parseKeyFromPem(keyFile []byte) (*ecdsa.PrivateKey, error) {
-	key, err := x509.ParseECPrivateKey(keyFile)
+	keyDer, _ := pem.Decode(keyFile)
+	if keyDer == nil {
+		return nil, fmt.Errorf("failed to decode PEM key")
+	}
+	key, err := x509.ParseECPrivateKey(keyDer.Bytes)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
@@ -109,18 +118,28 @@ func (s *CertificateService) parseKeyFromPem(keyFile []byte) (*ecdsa.PrivateKey,
 	return key, nil
 }
 func (s *CertificateService) signCertificateForAgent(ctx context.Context, block []byte, csrID int) (*bytes.Buffer, error) {
-	CSR, err := x509.ParseCertificateRequest(block)
+	fmt.Println("certificate")
+	fmt.Println(string(block))
+	csrDer, _ := pem.Decode(block)
+	fmt.Println(csrDer.Type)
+	if csrDer == nil || csrDer.Type != "CERTIFICATE REQUEST" {
+		return nil, fmt.Errorf("failed to decode certificate request block")
+	}
+	fmt.Printf("DER len: %d\n", len(csrDer.Bytes))
+	fmt.Println(string(csrDer.Bytes))
+	CSR, err := x509.ParseCertificateRequest(csrDer.Bytes)
 	if err != nil {
 		return nil, err
 	}
 
 	if err = CSR.CheckSignature(); err != nil {
-		fmt.Println(err)
+		fmt.Printf("sign %v", err)
 		return nil, err
 	}
+	fmt.Println(string(s.CACertificatePem))
 	certCA, err := s.parseCertFromPem(s.CACertificatePem)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Printf("ourcert %v", err)
 		return nil, err
 	}
 	keyCA, err := s.parseKeyFromPem(s.CAKeyPem)

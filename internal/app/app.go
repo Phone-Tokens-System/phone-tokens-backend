@@ -58,7 +58,7 @@ func BuildService(cfg Config) (*Services, error) {
 
 	tokenSvc := tokens.NewService(repo)
 
-	certSvc, err := certificates.NewCertificateService()
+	certSvc, err := certificates.NewCertificateService(repo)
 	if err != nil {
 		return nil, err
 	}

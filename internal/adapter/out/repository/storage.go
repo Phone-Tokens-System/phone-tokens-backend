@@ -3,6 +3,8 @@ package repository
 import (
 	"context"
 	"errors"
+	"fmt"
+	"log"
 
 	"phone-tokens/internal/model"
 	"phone-tokens/internal/service/tokens"
@@ -112,7 +114,10 @@ func toPermissionStrings(perms []model.TokenPermission) []string {
 }
 
 func (r *Storage) SaveCsrRequest(ctx context.Context, request model.CsrRequest) (model.CsrRequest, error) {
+	log.Println(r)
 	err := r.db.WithContext(ctx).Save(&request).Error
+	fmt.Println(err)
+	log.Println(err)
 	if err != nil {
 		return model.CsrRequest{}, err
 	}

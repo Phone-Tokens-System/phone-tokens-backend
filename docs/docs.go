@@ -15,8 +15,13 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/admin/csr": {
+        "/api/v1/admin/csr": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Returns all pending Certificate Signing Requests",
                 "consumes": [
                     "application/json"
@@ -50,8 +55,13 @@ const docTemplate = `{
                 }
             }
         },
-        "/admin/csr/approve": {
+        "/api/v1/admin/csr/approve/{id}": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Approves a CSR request by its ID and signs the certificate",
                 "consumes": [
                     "application/json"
@@ -100,8 +110,13 @@ const docTemplate = `{
                 }
             }
         },
-        "/csr": {
+        "/api/v1/csr": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Accepts a Certificate Signing Request from an agent",
                 "consumes": [
                     "application/json"
@@ -152,7 +167,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/csr/signed": {
+        "/api/v1/csr/signed": {
             "get": {
                 "description": "Returns the signed certificate for the given CSR ID",
                 "consumes": [
@@ -202,7 +217,186 @@ const docTemplate = `{
                 }
             }
         },
-        "/sms/list": {
+        "/api/v1/csr/upload": {
+            "post": {
+                "description": "Accepts a CSR from an agent as a file upload",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CSR"
+                ],
+                "summary": "Upload a Certificate Signing Request (CSR) file",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "CSR file",
+                        "name": "csr",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Email of requester",
+                        "name": "email",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Signed certificate",
+                        "schema": {
+                            "$ref": "#/definitions/dto.CertificateResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/login": {
+            "post": {
+                "description": "Authenticates user with phone and password and returns a JWT token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Login a user",
+                "parameters": [
+                    {
+                        "description": "User login payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.loginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "JWT token",
+                        "schema": {
+                            "$ref": "#/definitions/http.loginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid credentials",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/register": {
+            "post": {
+                "description": "Registers a new user with phone, password and role",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Register a new user",
+                "parameters": [
+                    {
+                        "description": "User registration payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.registerRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "User successfully registered",
+                        "schema": {
+                            "$ref": "#/definitions/http.registerResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Phone already used",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sms/list": {
             "get": {
                 "description": "Returns the list of all sent SMS",
                 "consumes": [
@@ -237,7 +431,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/sms/send": {
+        "/api/v1/sms/send": {
             "post": {
                 "description": "Sends an SMS to the specified phone number",
                 "consumes": [
@@ -289,7 +483,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/sms/status": {
+        "/api/v1/sms/status": {
             "post": {
                 "description": "Returns the status of an SMS by ID",
                 "consumes": [
@@ -340,6 +534,386 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/api/v1/tokens": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Issues a persistent token for the authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Token"
+                ],
+                "summary": "Issue a persistent token",
+                "parameters": [
+                    {
+                        "description": "Token request payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.createTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Token successfully issued",
+                        "schema": {
+                            "$ref": "#/definitions/http.tokenResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tokens/{tokenID}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Removes a token for the authenticated user",
+                "tags": [
+                    "Token"
+                ],
+                "summary": "Delete a token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Token ID",
+                        "name": "tokenID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Token not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Updates token expiration time for the authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Token"
+                ],
+                "summary": "Update token expiration",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Token ID",
+                        "name": "tokenID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update TTL request payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.updateTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Token successfully updated",
+                        "schema": {
+                            "$ref": "#/definitions/http.tokenResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Token not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tokens/{tokenID}/freeze": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Sets token status to frozen",
+                "tags": [
+                    "Token"
+                ],
+                "summary": "Freeze a token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Token ID",
+                        "name": "tokenID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Token successfully frozen",
+                        "schema": {
+                            "$ref": "#/definitions/http.tokenResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Token not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tokens/{tokenID}/unfreeze": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Sets token status to active",
+                "tags": [
+                    "Token"
+                ],
+                "summary": "Unfreeze a token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Token ID",
+                        "name": "tokenID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Token successfully unfrozen",
+                        "schema": {
+                            "$ref": "#/definitions/http.tokenResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Token not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -347,10 +921,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "csr": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
+                    "type": "string"
                 },
                 "email": {
                     "type": "string"
@@ -361,10 +932,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "certificate": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
+                    "type": "string"
                 },
                 "csr_id": {
                     "type": "integer"
@@ -375,6 +943,104 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "http.createTokenRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "permissions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.TokenPermission"
+                    }
+                },
+                "ttl_seconds": {
+                    "type": "integer"
+                }
+            }
+        },
+        "http.loginRequest": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                }
+            }
+        },
+        "http.loginResponse": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "http.registerRequest": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "role": {
+                    "$ref": "#/definitions/model.Role"
+                }
+            }
+        },
+        "http.registerResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "role": {
+                    "$ref": "#/definitions/model.Role"
+                }
+            }
+        },
+        "http.tokenResponse": {
+            "type": "object",
+            "properties": {
+                "expires_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "permissions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.TokenPermission"
+                    }
+                },
+                "status": {
+                    "$ref": "#/definitions/model.TokenStatus"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "http.updateTokenRequest": {
+            "type": "object",
+            "properties": {
+                "ttl_seconds": {
                     "type": "integer"
                 }
             }
@@ -402,14 +1068,22 @@ const docTemplate = `{
                 }
             }
         },
+        "model.Role": {
+            "type": "string",
+            "enum": [
+                "admin",
+                "user"
+            ],
+            "x-enum-varnames": [
+                "RoleAdmin",
+                "RoleUser"
+            ]
+        },
         "model.SmsRequest": {
             "type": "object",
             "properties": {
                 "certificate": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
+                    "type": "string"
                 },
                 "client_token": {
                     "type": "string"
@@ -477,6 +1151,36 @@ const docTemplate = `{
                     "type": "integer"
                 }
             }
+        },
+        "model.TokenPermission": {
+            "type": "string",
+            "enum": [
+                "sms",
+                "calls"
+            ],
+            "x-enum-varnames": [
+                "TokenPermissionSMS",
+                "TokenPermissionCalls"
+            ]
+        },
+        "model.TokenStatus": {
+            "type": "string",
+            "enum": [
+                "active",
+                "frozen"
+            ],
+            "x-enum-varnames": [
+                "TokenStatusActive",
+                "TokenStatusFrozen"
+            ]
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Type \"Bearer \" followed by your JWT token",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }`

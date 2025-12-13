@@ -3,7 +3,7 @@ package model
 import "github.com/google/uuid"
 
 type ExternalAgentInfo struct {
-	CsrID          int       `json:"csr_id" gorm:"column:csr_id;primary_key"`
+	CsrID          int       `json:"csr_id" gorm:"column:csr_id"`
 	ID             uuid.UUID `json:"id" gorm:"primary_key;AUTO_INCREMENT"`
 	ServiceName    string    `json:"service_name" gorm:"column:service_name"`
 	OrganizationID string    `json:"organization_id" gorm:"column:organization_id; size:500; UNIQUE_INDEX;NOT NULL;"`

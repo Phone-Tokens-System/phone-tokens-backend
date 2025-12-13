@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -11,6 +12,11 @@ import (
 )
 
 // Entry point for the monolithic HTTP server.
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer " followed by your JWT token
+
 func main() {
 	cfg, err := app.LoadConfig()
 	if err != nil {
@@ -27,7 +33,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to initialize HTTP server: %v", err)
 	}
-
+	fmt.Println(services.Cert.Storage)
 	go func() {
 		log.Printf("HTTP server started on :%s", cfg.HTTPPort)
 		if err := httpServer.ListenAndServe(); err != nil && err.Error() != "http: Server closed" {

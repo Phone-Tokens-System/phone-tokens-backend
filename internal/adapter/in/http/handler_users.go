@@ -28,6 +28,18 @@ type registerResponse struct {
 	Role  model.Role `json:"role"`
 }
 
+// Register godoc
+// @Summary Register a new user
+// @Description Registers a new user with phone, password and role
+// @Tags User
+// @Accept json
+// @Produce json
+// @Param request body registerRequest true "User registration payload"
+// @Success 201 {object} registerResponse "User successfully registered"
+// @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 409 {object} map[string]string "Phone already used"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /api/v1/register [post]
 func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req registerRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -64,6 +76,18 @@ type loginResponse struct {
 	Token string `json:"token"`
 }
 
+// Login godoc
+// @Summary Login a user
+// @Description Authenticates user with phone and password and returns a JWT token
+// @Tags User
+// @Accept json
+// @Produce json
+// @Param request body loginRequest true "User login payload"
+// @Success 200 {object} loginResponse "JWT token"
+// @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 401 {object} map[string]string "Invalid credentials"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /api/v1/login [post]
 func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req loginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

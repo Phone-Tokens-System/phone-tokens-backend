@@ -26,7 +26,7 @@ func NewSmsHandler(smsService *sms_service.SmsService) *SmsHandler {
 // @Success 200 {object} model.SmsResponse "Sent SMS details"
 // @Failure 400 {object} map[string]string "Invalid request"
 // @Failure 500 {object} map[string]string "Internal server error"
-// @Router /sms/send [post]
+// @Router /api/v1/sms/send [post]
 func (h *SmsHandler) sendSMS(w http.ResponseWriter, req *http.Request) {
 	var request model.SmsRequest
 	err := json.NewDecoder(req.Body).Decode(&request)
@@ -58,7 +58,7 @@ func (h *SmsHandler) sendSMS(w http.ResponseWriter, req *http.Request) {
 // @Success 200 {object} model.SmsStatus "SMS status details"
 // @Failure 400 {object} map[string]string "Invalid request"
 // @Failure 500 {object} map[string]string "Internal server error"
-// @Router /sms/status [post]
+// @Router /api/v1/sms/status [post]
 func (h *SmsHandler) checkStatus(w http.ResponseWriter, req *http.Request) {
 	var smsId dto.SmsId
 	err := json.NewDecoder(req.Body).Decode(&smsId)
@@ -85,8 +85,8 @@ func (h *SmsHandler) checkStatus(w http.ResponseWriter, req *http.Request) {
 // @Produce json
 // @Success 200 {array} model.SmsResponse "List of sent SMS"
 // @Failure 500 {object} map[string]string "Internal server error"
-// @Router /sms/list [get]
-func (h *SmsHandler) getSmsList(w http.ResponseWriter) {
+// @Router /api/v1/sms/list [get]
+func (h *SmsHandler) getSmsList(w http.ResponseWriter, req *http.Request) {
 	smsList, err := h.smsService.GetSmsList()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

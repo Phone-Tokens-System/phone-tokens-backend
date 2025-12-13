@@ -33,7 +33,19 @@ type tokenResponse struct {
 	ExpiresAt   string                  `json:"expires_at"`
 }
 
-// CreateToken issues a persistent token for the authenticated user.
+// CreateToken godoc
+// @Summary Issue a persistent token
+// @Security BearerAuth
+// @Description Issues a persistent token for the authenticated user
+// @Tags Token
+// @Accept json
+// @Produce json
+// @Param request body createTokenRequest true "Token request payload"
+// @Success 201 {object} tokenResponse "Token successfully issued"
+// @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /api/v1/tokens [post]
 func (h *TokenHandler) CreateToken(w http.ResponseWriter, r *http.Request) {
 	var req createTokenRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -73,7 +85,22 @@ type updateTokenRequest struct {
 	TTLSeconds int64 `json:"ttl_seconds"`
 }
 
-// UpdateTokenTTL updates token expiration time for the authenticated user.
+// UpdateTokenTTL godoc
+// @Summary Update token expiration
+// @Security BearerAuth
+// @Description Updates token expiration time for the authenticated user
+// @Tags Token
+// @Accept json
+// @Produce json
+// @Param tokenID path string true "Token ID"
+// @Param request body updateTokenRequest true "Update TTL request payload"
+// @Success 200 {object} tokenResponse "Token successfully updated"
+// @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Forbidden"
+// @Failure 404 {object} map[string]string "Token not found"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /api/v1/tokens/{tokenID} [patch]
 func (h *TokenHandler) UpdateTokenTTL(w http.ResponseWriter, r *http.Request) {
 	var req updateTokenRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -113,7 +140,19 @@ func (h *TokenHandler) UpdateTokenTTL(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, toTokenResponse(token))
 }
 
-// DeleteToken removes a token for the authenticated user.
+// DeleteToken godoc
+// @Summary Delete a token
+// @Security BearerAuth
+// @Description Removes a token for the authenticated user
+// @Tags Token
+// @Param tokenID path string true "Token ID"
+// @Success 204 "No Content"
+// @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Forbidden"
+// @Failure 404 {object} map[string]string "Token not found"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /api/v1/tokens/{tokenID} [delete]
 func (h *TokenHandler) DeleteToken(w http.ResponseWriter, r *http.Request) {
 	tokenID := r.PathValue("tokenID")
 	if tokenID == "" {
@@ -143,10 +182,36 @@ func (h *TokenHandler) DeleteToken(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// FreezeToken godoc
+// @Summary Freeze a token
+// @Security BearerAuth
+// @Description Sets token status to frozen
+// @Tags Token
+// @Param tokenID path string true "Token ID"
+// @Success 200 {object} tokenResponse "Token successfully frozen"
+// @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Forbidden"
+// @Failure 404 {object} map[string]string "Token not found"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /api/v1/tokens/{tokenID}/freeze [patch]
 func (h *TokenHandler) FreezeToken(w http.ResponseWriter, r *http.Request) {
 	h.changeStatus(w, r, model.TokenStatusFrozen)
 }
 
+// UnfreezeToken godoc
+// @Summary Unfreeze a token
+// @Security BearerAuth
+// @Description Sets token status to active
+// @Tags Token
+// @Param tokenID path string true "Token ID"
+// @Success 200 {object} tokenResponse "Token successfully unfrozen"
+// @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Forbidden"
+// @Failure 404 {object} map[string]string "Token not found"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /api/v1/tokens/{tokenID}/unfreeze [patch]
 func (h *TokenHandler) UnfreezeToken(w http.ResponseWriter, r *http.Request) {
 	h.changeStatus(w, r, model.TokenStatusActive)
 }

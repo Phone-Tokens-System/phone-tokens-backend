@@ -8,7 +8,7 @@ import (
 
 func (s *CertificateService) AcceptCertificateRequest(ctx context.Context, requestDTO dto.CSRRequest) (int, error) {
 	csrRequest := model.CsrRequest{
-		CSR:    requestDTO.CSR,
+		CSR:    []byte(requestDTO.CSR),
 		Status: "PENDING",
 		Email:  requestDTO.Email,
 	}

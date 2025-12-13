@@ -8,9 +8,21 @@ request to send sms_service to one user.
 */
 type SmsRequest struct {
 	ServiceName string `json:"service_name"`
-	Certificate []byte `json:"certificate"`
+	Certificate string `json:"certificate"`
 	ClientToken string `json:"client_token"`
 	Text        string `json:"text"`
+}
+
+/*
+*
+struct for mass-request for sms_service.
+a lot of clients - one text
+*/
+type GroupSMSRequest struct {
+	ServiceName   string `json:"service_name"`
+	Certificate   []byte `json:"certificate"`
+	ClientNumbers []int  `json:"client_numbers"`
+	Text          string `json:"text"`
 }
 
 type SmsResponse struct {
