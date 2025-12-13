@@ -9,4 +9,4 @@ ALTER TABLE agent_info
 DROP service_name;
 
 ALTER TABLE certificate_requests
-DROP service_name
+DROP service_name;

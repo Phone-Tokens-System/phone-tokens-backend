@@ -6,4 +6,4 @@ CREATE TABLE IF NOT EXISTS certificate_requests (
     status varchar(20) NOT NULL
 );
 -- +goose Down
-DROP TABLE IF EXISTS certificate_requests
+DROP TABLE IF EXISTS certificate_requests;

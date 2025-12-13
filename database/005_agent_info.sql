@@ -8,4 +8,4 @@ CREATE TABLE IF NOT EXISTS agent_info (
     is_active bool NOT NULL
 );
 -- +goose Down
-DROP TABLE IF EXISTS agent_info
+DROP TABLE IF EXISTS agent_info;
