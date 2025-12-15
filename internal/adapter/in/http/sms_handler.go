@@ -96,3 +96,49 @@ func (h *SmsHandler) getSmsList(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
+
+// getSmsListByAgentId godoc
+// @Summary get sms sent by agent by id
+// @Description Returns list of sms
+// @Tags SMS
+// @Accept json
+// @Produce json
+// @Param agentId path string true "Agent ID"
+// @Success 200 {array} model.SmsResponse "SMS status details"
+// @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /api/v1/sms/agents/agentId [post]
+func (h *SmsHandler) getSmsListByAgentId(w http.ResponseWriter, req *http.Request) {
+	id := req.PathValue("agentId")
+	smsList, err := h.smsService.GetSmsListByAgentId(req.Context(), id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	err = json.NewEncoder(w).Encode(smsList)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+// getSmsListByUser godoc
+// @Summary get sms sent to user
+// @Description Returns list of sms
+// @Tags SMS
+// @Accept json
+// @Produce json
+// @Param userId path string true "User ID"
+// @Success 200 {array} model.SmsResponse "SMS status details"
+// @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /api/v1/sms/agents/agentId [post]
+func (h *SmsHandler) getSmsListByUser(w http.ResponseWriter, req *http.Request) {
+	userId := req.PathValue("userId")
+	smsList, err := h.smsService.GetSmsByUser(req.Context(), userId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	err = json.NewEncoder(w).Encode(smsList)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
