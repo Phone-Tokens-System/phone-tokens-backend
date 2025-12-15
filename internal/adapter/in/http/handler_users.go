@@ -52,6 +52,8 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		switch err {
 		case users.ErrPhoneAlreadyUsed:
 			http.Error(w, err.Error(), http.StatusConflict)
+		case users.ErrRoleNotAllowed:
+			http.Error(w, err.Error(), http.StatusBadRequest)
 		default:
 			http.Error(w, "internal error", http.StatusInternalServerError)
 		}

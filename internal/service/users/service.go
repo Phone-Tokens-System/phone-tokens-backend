@@ -15,6 +15,7 @@ import (
 var (
 	ErrPhoneAlreadyUsed   = errors.New("phone already used")
 	ErrInvalidCredentials = errors.New("invalid credentials")
+	ErrRoleNotAllowed     = errors.New("role must be user or agent")
 )
 
 type Config struct {
@@ -35,16 +36,17 @@ func NewService(repo Repository, cfg Config) Service {
 }
 
 func (s *service) Register(ctx context.Context, phone, password string, role model.Role) (*model.User, error) {
+	role, err := sanitizeSelfAssignedRole(role)
+	if err != nil {
+		return nil, err
+	}
+
 	existing, err := s.repo.GetUserByPhone(ctx, phone)
 	if err != nil && !errors.Is(err, ErrNotFound) {
 		return nil, err
 	}
 	if existing != nil {
 		return nil, ErrPhoneAlreadyUsed
-	}
-
-	if role == "" {
-		role = model.RoleUser
 	}
 
 	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -107,3 +109,15 @@ func (s *service) generateToken(user *model.User) (string, error) {
 }
 
 var ErrNotFound = errors.New("user not found")
+
+func sanitizeSelfAssignedRole(role model.Role) (model.Role, error) {
+	if role == "" {
+		return model.RoleUser, nil
+	}
+
+	if role != model.RoleUser && role != model.RoleAgent {
+		return "", ErrRoleNotAllowed
+	}
+
+	return role, nil
+}

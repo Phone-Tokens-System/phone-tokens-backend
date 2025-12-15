@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"phone_token_system/internal/model"
+	"phone-tokens/internal/model"
 )
 
 func TestServiceUpdateTTLSuccess(t *testing.T) {
@@ -243,12 +243,14 @@ func TestServiceSetStatus(t *testing.T) {
 }
 
 type memoryRepo struct {
-	tokens map[string]*model.UserToken
+	tokens      map[string]*model.UserToken
+	phonesByUID map[string]string
 }
 
 func newMemoryRepo() *memoryRepo {
 	return &memoryRepo{
-		tokens: make(map[string]*model.UserToken),
+		tokens:      make(map[string]*model.UserToken),
+		phonesByUID: make(map[string]string),
 	}
 }
 
@@ -265,12 +267,12 @@ func (r *memoryRepo) GetTokenByID(_ context.Context, id string) (*model.UserToke
 	return token, nil
 }
 
-func (r *memoryRepo) UpdateToken(_ context.Context, token *model.UserToken) error {
+func (r *memoryRepo) UpdateToken(_ context.Context, token *model.UserToken) (*model.UserToken, error) {
 	if _, ok := r.tokens[token.ID]; !ok {
-		return ErrNotFound
+		return nil, ErrNotFound
 	}
 	r.tokens[token.ID] = token
-	return nil
+	return token, nil
 }
 
 func (r *memoryRepo) DeleteToken(_ context.Context, id string) error {
@@ -279,6 +281,41 @@ func (r *memoryRepo) DeleteToken(_ context.Context, id string) error {
 	}
 	delete(r.tokens, id)
 	return nil
+}
+
+func (r *memoryRepo) GetUserIdFromToken(_ context.Context, token string) (string, error) {
+	for _, t := range r.tokens {
+		if t.Token == token {
+			return t.UserID, nil
+		}
+	}
+	return "", ErrNotFound
+}
+
+func (r *memoryRepo) GetNumberFromUserId(_ context.Context, userId string) (string, error) {
+	if phone, ok := r.phonesByUID[userId]; ok {
+		return phone, nil
+	}
+	return "", ErrNotFound
+}
+
+func (r *memoryRepo) GetTokenByToken(_ context.Context, token string) (*model.UserToken, error) {
+	for _, t := range r.tokens {
+		if t.Token == token {
+			return t, nil
+		}
+	}
+	return nil, ErrNotFound
+}
+
+func (r *memoryRepo) GetTokensByUserId(_ context.Context, userId string) ([]model.UserToken, error) {
+	result := make([]model.UserToken, 0)
+	for _, t := range r.tokens {
+		if t.UserID == userId {
+			result = append(result, *t)
+		}
+	}
+	return result, nil
 }
 
 func assertError(t *testing.T, err error, expected error) error {
