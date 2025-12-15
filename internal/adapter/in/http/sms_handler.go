@@ -66,7 +66,7 @@ func (h *SmsHandler) checkStatus(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 
-	status, err := h.smsService.GetSmsStatus(smsId.Id)
+	status, err := h.smsService.GetSmsStatusPing(smsId.Id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -87,7 +87,7 @@ func (h *SmsHandler) checkStatus(w http.ResponseWriter, req *http.Request) {
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /api/v1/sms/list [get]
 func (h *SmsHandler) getSmsList(w http.ResponseWriter, req *http.Request) {
-	smsList, err := h.smsService.GetSmsList()
+	smsList, err := h.smsService.GetSmsList(req.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

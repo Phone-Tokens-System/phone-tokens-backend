@@ -273,8 +273,8 @@ func isValidationError(err error) bool {
 // @Tags         tokens
 // @Accept       json
 // @Produce      json
-// @Param        request  body      dto.BindTokenRequest  true  "Bind agent to token request"
-// @Success      200      {object}  dto.TokenResponse
+// @Param        user_id path string true "User ID"
+// @Success      200      {object}  tokenResponse
 // @Failure      400      {string}  string  "invalid request body"
 // @Failure      401      {string}  string  "unauthorized"
 // @Failure      403      {string}  string  "forbidden"
@@ -297,6 +297,20 @@ func (h *TokenHandler) BindAgentToToken(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+// GetTokensByUser godoc
+// @Summary      Get tokens by user
+// @Description  Получение токенов пользователя
+// @Tags         tokens
+// @Accept       json
+// @Produce      json
+// @Param        request  body      dto.BindTokenRequest  true  "Bind agent to token request"
+// @Success      200      {array}  tokenResponse
+// @Failure      400      {string}  string  "invalid request body"
+// @Failure      401      {string}  string  "unauthorized"
+// @Failure      403      {string}  string  "forbidden"
+// @Failure      404      {string}  string  "not found"
+// @Failure      500      {string}  string  "internal server error"
+// @Router        /users/{user_id}/tokens [get]
 func (h *TokenHandler) GetTokensByUser(w http.ResponseWriter, r *http.Request) {
 	userId := r.PathValue("user_id")
 	if userId == "" {

@@ -41,7 +41,7 @@ func NewAeroService(email string, apiKey string) *AeroService {
 	return &AeroService{email, apiKey, client}
 }
 
-func (s *AeroService) SendSms(number int, text string) (model.SmsResponse, error) {
+func (s *AeroService) SendSms(number int, text string, callBackUrl string) (model.SmsResponse, error) {
 	sendResult, err := s.Client.SendSms(number, text)
 	if err != nil {
 		return model.SmsResponse{}, err

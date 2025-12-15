@@ -10,7 +10,6 @@ import (
 	"phone-tokens/internal/service/tokens"
 	"phone-tokens/internal/service/users"
 
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -216,14 +215,14 @@ func (r *Storage) GetAllSms(ctx context.Context) ([]model.SmsResponse, error) {
 	return smsResponse, err
 }
 
-func (r *Storage) GetSmsByServiceId(ctx context.Context, serviceId uuid.UUID) ([]model.SmsResponse, error) {
+func (r *Storage) GetSmsByServiceId(ctx context.Context, serviceId string) ([]model.SmsResponse, error) {
 	smsResponse := []model.SmsResponse{}
 	err := r.db.WithContext(ctx).Find(&smsResponse, "service_id = ?", serviceId).Error
 	return smsResponse, err
 }
 
-func (r *Storage) GetSmsByPhoneNumber(ctx context.Context, phoneNumber string) (model.SmsResponse, error) {
-	smsResponse := model.SmsResponse{}
+func (r *Storage) GetSmsByPhoneNumber(ctx context.Context, phoneNumber string) ([]model.SmsResponse, error) {
+	smsResponse := []model.SmsResponse{}
 	err := r.db.WithContext(ctx).Find(&smsResponse, "number = ?", phoneNumber).Error
 	return smsResponse, err
 }

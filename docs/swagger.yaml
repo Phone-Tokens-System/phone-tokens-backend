@@ -1,4 +1,11 @@
 definitions:
+  dto.BindTokenRequest:
+    properties:
+      agent_id:
+        type: string
+      token_name:
+        type: string
+    type: object
   dto.CSRRequest:
     properties:
       csr:
@@ -61,6 +68,8 @@ definitions:
     type: object
   http.tokenResponse:
     properties:
+      agent_id:
+        type: string
       expires_at:
         type: string
       id:
@@ -128,7 +137,7 @@ definitions:
       from:
         type: string
       id:
-        type: integer
+        type: string
       number:
         type: string
       raw: {}
@@ -754,6 +763,92 @@ paths:
       summary: Unfreeze a token
       tags:
       - Token
+  /tokens/bind-agent:
+    post:
+      consumes:
+      - application/json
+      description: Привязывает агента (внешний сервис) к пользовательскому токену
+        по имени токена и ид агента
+      parameters:
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.tokenResponse'
+        "400":
+          description: invalid request body
+          schema:
+            type: string
+        "401":
+          description: unauthorized
+          schema:
+            type: string
+        "403":
+          description: forbidden
+          schema:
+            type: string
+        "404":
+          description: not found
+          schema:
+            type: string
+        "500":
+          description: internal server error
+          schema:
+            type: string
+      summary: Bind agent (service) to token
+      tags:
+      - tokens
+  /users/{user_id}/tokens:
+    get:
+      consumes:
+      - application/json
+      description: Получение токенов пользователя
+      parameters:
+      - description: Bind agent to token request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.BindTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/http.tokenResponse'
+            type: array
+        "400":
+          description: invalid request body
+          schema:
+            type: string
+        "401":
+          description: unauthorized
+          schema:
+            type: string
+        "403":
+          description: forbidden
+          schema:
+            type: string
+        "404":
+          description: not found
+          schema:
+            type: string
+        "500":
+          description: internal server error
+          schema:
+            type: string
+      summary: Get tokens by user
+      tags:
+      - tokens
 securityDefinitions:
   BearerAuth:
     description: Type "Bearer " followed by your JWT token
