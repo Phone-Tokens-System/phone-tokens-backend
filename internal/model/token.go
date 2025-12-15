@@ -68,15 +68,15 @@ func (p *TokenPermissions) fromString(s string) error {
 }
 
 type UserToken struct {
-	ID          string           `json:"id" gorm:"column:id;type:uuid;primaryKey"`
-	UserID      string           `json:"user_id" gorm:"column:user_id;type:uuid;index;not null"`
-	Token       string           `json:"token" gorm:"column:token;not null"`
-	AgentId     uuid.UUID        `json:"agent_id" gorm:"column:agent_id;not null"`
-	Name        string           `json:"name" gorm:"column:name;not null"`
-	Permissions TokenPermissions `json:"permissions" gorm:"column:permissions;type:text[];not null"`
-	Status      TokenStatus      `json:"status" gorm:"column:status;type:text;not null"`
-	ExpiresAt   time.Time        `json:"expires_at" gorm:"column:expires_at;not null;index"`
-	CreatedAt   time.Time        `json:"created_at" gorm:"column:created_at;autoCreateTime"`
+	ID          string           `json:"id" gorm:"type:uuid;primaryKey"`
+	UserID      string           `json:"user_id" gorm:"type:uuid;index;not null"`
+	Token       string           `json:"token" gorm:"not null"`
+	AgentId     uuid.UUID        `json:"agent_id" gorm:"not null"`
+	Name        string           `json:"name" gorm:"not null"`
+	Permissions TokenPermissions `json:"permissions" gorm:"type:text[];not null"`
+	Status      TokenStatus      `json:"status" gorm:"type:text;not null"`
+	ExpiresAt   time.Time        `json:"expires_at" gorm:"not null;index"`
+	CreatedAt   time.Time        `json:"created_at" gorm:"autoCreateTime"`
 }
 
 func (UserToken) TableName() string {
