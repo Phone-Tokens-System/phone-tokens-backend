@@ -26,17 +26,17 @@ type GroupSMSRequest struct {
 }
 
 type SmsResponse struct {
-	ServiceName  string    `json:"service_name" gorm:"column:service_name;not null"`
-	ServiceId    uuid.UUID `json:"service_id" gorm:"column:service_id;not null"`
+	ServiceName  string    `json:"service_name" gorm:"not null"`
+	ServiceId    uuid.UUID `json:"service_id" gorm:"not null"`
 	Id           string    `json:"id,omitempty" gorm:"column:external_id;not null"`
 	From         string    `json:"from,omitempty" gorm:"column:from_number"`
-	Number       string    `json:"number" gorm:"column:number;not null"`
-	Text         string    `json:"text" gorm:"column:text;not null"`
-	Status       int       `json:"status" gorm:"column:status;not null"`
-	ExtendStatus string    `json:"extend_status,omitempty" gorm:"column:extend_status"`
-	Cost         float64   `json:"cost" gorm:"column:cost"`
-	DateCreated  int       `json:"date_created,omitempty" gorm:"column:date_created"`
-	DateSent     int       `json:"date_sent,omitempty" gorm:"column:date_sent"`
+	Number       string    `json:"number" gorm:"not null"`
+	Text         string    `json:"text" gorm:"not null"`
+	Status       int       `json:"status" gorm:"not null"`
+	ExtendStatus string    `json:"extend_status,omitempty"`
+	Cost         float64   `json:"cost"`
+	DateCreated  int       `json:"date_created,omitempty"`
+	DateSent     int       `json:"date_sent,omitempty"`
 	Raw          any       `json:"raw,omitempty" gorm:"raw;not null"`
 }
 

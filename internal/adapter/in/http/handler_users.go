@@ -17,9 +17,11 @@ func NewUserHandler(service users.Service) *UserHandler {
 }
 
 type registerRequest struct {
-	Phone    string     `json:"phone"`
-	Password string     `json:"password"`
-	Role     model.Role `json:"role"`
+	Phone       string     `json:"phone"`
+	Password    string     `json:"password"`
+	Role        model.Role `json:"role"`
+	ServiceName string     `json:"service_name"`
+	Email       string     `json:"email"`
 }
 
 type registerResponse struct {
@@ -47,11 +49,15 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.service.Register(r.Context(), req.Phone, req.Password, req.Role)
+	user, err := h.service.Register(r.Context(), req.Phone, req.Password, req.Role, req.ServiceName, req.Email)
 	if err != nil {
 		switch err {
 		case users.ErrPhoneAlreadyUsed:
 			http.Error(w, err.Error(), http.StatusConflict)
+		case users.ErrRoleNotAllowed:
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		case users.ErrAgentDetailsNeeded:
+			http.Error(w, err.Error(), http.StatusBadRequest)
 		default:
 			http.Error(w, "internal error", http.StatusInternalServerError)
 		}
