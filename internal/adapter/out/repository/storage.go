@@ -10,6 +10,7 @@ import (
 	"phone-tokens/internal/service/tokens"
 	"phone-tokens/internal/service/users"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -191,4 +192,33 @@ func (r *Storage) GetTokenByToken(ctx context.Context, token string) (*model.Use
 		}
 	}
 	return &tokenObj, nil
+}
+
+func (r *Storage) SaveSms(ctc context.Context, smsResponse model.SmsResponse) error {
+	err := r.db.WithContext(ctc).Save(&smsResponse).Error
+	return err
+}
+
+func (r *Storage) GetAllSms(ctx context.Context) ([]model.SmsResponse, error) {
+	smsResponse := []model.SmsResponse{}
+	err := r.db.WithContext(ctx).Find(&smsResponse).Error
+	return smsResponse, err
+}
+
+func (r *Storage) GetSmsByServiceId(ctx context.Context, serviceId uuid.UUID) ([]model.SmsResponse, error) {
+	smsResponse := []model.SmsResponse{}
+	err := r.db.WithContext(ctx).Find(&smsResponse, "service_id = ?", serviceId).Error
+	return smsResponse, err
+}
+
+func (r *Storage) GetSmsByPhoneNumber(ctx context.Context, phoneNumber string) (model.SmsResponse, error) {
+	smsResponse := model.SmsResponse{}
+	err := r.db.WithContext(ctx).Find(&smsResponse, "number = ?", phoneNumber).Error
+	return smsResponse, err
+}
+
+func (r *Storage) GetSmsByServiceName(ctx context.Context, serviceName string) ([]model.SmsResponse, error) {
+	smsResponse := []model.SmsResponse{}
+	err := r.db.WithContext(ctx).Find(&smsResponse, "service_name = ?", serviceName).Error
+	return smsResponse, err
 }

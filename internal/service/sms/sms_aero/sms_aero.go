@@ -10,7 +10,7 @@ import (
 )
 
 // AeroSmsResponse
-// implementation of sms_service response from adapter.
+// implementation of sms response from adapter.
 // /**
 type AeroSmsResponse struct {
 	sms    smsaero_golang.SendSms
@@ -24,7 +24,7 @@ type AeroSmsElem struct {
 }
 
 // AeroService
-// realization of sms_service adapter - sms_service aero sms_service
+// realization of sms adapter - sms aero sms
 // /**
 type AeroService struct {
 	Email  string
@@ -47,7 +47,7 @@ func (s *AeroService) SendSms(number int, text string) (model.SmsResponse, error
 		return model.SmsResponse{}, err
 	}
 	response := model.SmsResponse{
-		Id:           sendResult.Id,
+		Id:           string(rune(sendResult.Id)),
 		From:         sendResult.From,
 		Number:       sendResult.Number,
 		Text:         sendResult.Text,
@@ -62,34 +62,38 @@ func (s *AeroService) SendSms(number int, text string) (model.SmsResponse, error
 }
 
 // GetSmsList
-// sms_service aero непонятно что возвращает в списке смсок. буквально просто мапу интерфейсов
+// sms aero непонятно что возвращает в списке смсок. буквально просто мапу интерфейсов
 // здесь я его привожу к мапе строк
 func (s *AeroService) GetSmsList() ([]model.SmsResponse, error) {
+	fmt.Println("GetSmsList")
 	sms, err := s.Client.SmsList()
+	fmt.Println(sms)
 	if err != nil {
 		return nil, err
 	}
 	smsRaw := sms.(map[string]interface{})
-
+	fmt.Println(smsRaw)
 	//smsList := make([]map[string]string, 0)
 	smsResponses := make([]model.SmsResponse, 0)
 	for k, v := range smsRaw {
+		fmt.Println("keys")
+		fmt.Println(k, v)
 		if k == "links" || k == "totalCount" {
 			continue
 		}
 
 		itemMap, ok := v.(map[string]interface{})
+		fmt.Println("map")
+		fmt.Println(itemMap)
 		if !ok {
+			fmt.Println("nooooooooooo")
 			continue
 		}
-		id, err := strconv.Atoi(fmt.Sprintf("%v", itemMap["id"]))
-		if err != nil {
-			continue
-		}
-		status, err := strconv.Atoi(fmt.Sprintf("%v", itemMap["status"]))
-		cost, err := strconv.ParseFloat(fmt.Sprintf("%v", itemMap["cost"]), 64)
-		dateCreated, err := strconv.Atoi(fmt.Sprintf("%v", itemMap["date_created"]))
-		dateSent, err := strconv.Atoi(fmt.Sprintf("%v", itemMap["date_sent"]))
+		id := fmt.Sprintf("%v", itemMap["id"])
+		status, _ := strconv.Atoi(fmt.Sprintf("%v", itemMap["status"]))
+		cost, _ := strconv.ParseFloat(fmt.Sprintf("%v", itemMap["cost"]), 64)
+		dateCreated, _ := strconv.Atoi(fmt.Sprintf("%v", itemMap["date_created"]))
+		dateSent, _ := strconv.Atoi(fmt.Sprintf("%v", itemMap["date_sent"]))
 		smsResponse := model.SmsResponse{
 			Id:           id,
 			From:         fmt.Sprintf("%v", itemMap["from"]),
@@ -102,6 +106,7 @@ func (s *AeroService) GetSmsList() ([]model.SmsResponse, error) {
 			DateSent:     dateSent,
 			Raw:          itemMap,
 		}
+		fmt.Println(smsResponse)
 		//smsItem := make(map[string]string)
 		//for key, val := range itemMap {
 		//	smsItem[key] = fmt.Sprintf("%v", val)

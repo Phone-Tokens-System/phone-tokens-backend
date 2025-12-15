@@ -1,4 +1,4 @@
-package sms_service
+package sms
 
 import (
 	"phone-tokens/internal/model"

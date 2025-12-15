@@ -25,7 +25,7 @@ func main() {
 
 	services, err := app.BuildService(cfg)
 	if err != nil {
-		log.Fatalf("failed to initialize sms_service: %v", err)
+		log.Fatalf("failed to initialize sms: %v", err)
 	}
 	handlers := httpadapter.BuildHandlers(*services)
 

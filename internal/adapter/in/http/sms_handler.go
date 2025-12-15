@@ -5,14 +5,14 @@ import (
 	"net/http"
 	"phone-tokens/internal/adapter/dto"
 	"phone-tokens/internal/model"
-	"phone-tokens/internal/service/sms_service"
+	"phone-tokens/internal/service/sms"
 )
 
 type SmsHandler struct {
-	smsService *sms_service.SmsService
+	smsService *sms.SmsService
 }
 
-func NewSmsHandler(smsService *sms_service.SmsService) *SmsHandler {
+func NewSmsHandler(smsService *sms.SmsService) *SmsHandler {
 	return &SmsHandler{smsService: smsService}
 }
 
@@ -35,13 +35,13 @@ func (h *SmsHandler) sendSMS(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	sms, err := h.smsService.SendSms(req.Context(), request)
+	sentSms, err := h.smsService.SendSms(req.Context(), request)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	err = json.NewEncoder(w).Encode(sms)
+	err = json.NewEncoder(w).Encode(sentSms)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

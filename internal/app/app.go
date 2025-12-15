@@ -4,8 +4,8 @@ import (
 	"errors"
 	"log"
 	"phone-tokens/internal/service/certificates"
-	"phone-tokens/internal/service/sms_service"
-	"phone-tokens/internal/service/sms_service/sms_aero"
+	"phone-tokens/internal/service/sms"
+	"phone-tokens/internal/service/sms/sms_aero"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -18,7 +18,7 @@ import (
 type Services struct {
 	User  users.Service
 	Token tokens.Service
-	SMS   *sms_service.SmsService
+	SMS   *sms.SmsService
 	Cert  *certificates.CertificateService
 }
 
@@ -65,7 +65,7 @@ func BuildService(cfg Config) (*Services, error) {
 
 	smsAdapter := sms_aero.NewAeroService(cfg.APIEmail, cfg.APIKey) // интерфейсную развязку сюда потом
 
-	smsSvc := sms_service.NewSmsService(*certSvc, smsAdapter, tokenSvc)
+	smsSvc := sms.NewSmsService(*certSvc, smsAdapter, tokenSvc)
 
 	services := Services{
 		User:  userSvc,
