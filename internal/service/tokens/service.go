@@ -93,11 +93,12 @@ func (s *service) UpdateTTL(ctx context.Context, userID, tokenID string, ttlSeco
 	now := time.Now().UTC()
 	token.ExpiresAt = now.Add(time.Duration(ttlSeconds) * time.Second)
 
-	if err := s.repo.UpdateToken(ctx, token); err != nil {
+	updatedToken, err := s.repo.UpdateToken(ctx, token)
+	if err != nil {
 		return nil, err
 	}
 
-	return token, nil
+	return updatedToken, nil
 }
 
 func (s *service) SetStatus(ctx context.Context, userID, tokenID string, status model.TokenStatus) (*model.UserToken, error) {
@@ -121,11 +122,12 @@ func (s *service) SetStatus(ctx context.Context, userID, tokenID string, status 
 
 	token.Status = status
 
-	if err := s.repo.UpdateToken(ctx, token); err != nil {
+	updatedToken, err := s.repo.UpdateToken(ctx, token)
+	if err != nil {
 		return nil, err
 	}
 
-	return token, nil
+	return updatedToken, nil
 }
 
 func (s *service) Delete(ctx context.Context, userID, tokenID string) error {
@@ -223,4 +225,17 @@ func (s *service) CheckTokenPermission(ctx context.Context, token string, agentI
 		}
 	}
 	return false, nil
+}
+
+func (s *service) BingAgentToToken(ctx context.Context, agentId uuid.UUID, tokenId string) (*model.UserToken, error) {
+	tokenObj, err := s.repo.GetTokenByID(ctx, tokenId)
+	if err != nil {
+		return nil, err
+	}
+	tokenObj.AgentId = agentId
+	token, err := s.repo.UpdateToken(ctx, tokenObj)
+	if err != nil {
+		return nil, err
+	}
+	return token, nil
 }

@@ -12,7 +12,7 @@ import (
 type Repository interface {
 	CreateToken(ctx context.Context, token *model.UserToken) error
 	GetTokenByID(ctx context.Context, id string) (*model.UserToken, error)
-	UpdateToken(ctx context.Context, token *model.UserToken) error
+	UpdateToken(ctx context.Context, token *model.UserToken) (*model.UserToken, error)
 	DeleteToken(ctx context.Context, id string) error
 	GetUserIdFromToken(ctx context.Context, token string) (string, error)
 	GetNumberFromUserId(ctx context.Context, userId string) (string, error)
