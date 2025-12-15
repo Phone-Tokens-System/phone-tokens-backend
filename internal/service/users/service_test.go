@@ -12,7 +12,7 @@ func TestRegisterDefaultsToUser(t *testing.T) {
 	repo := newStubRepo()
 	svc := NewService(repo, Config{JWTSecret: "secret", JWTExpiresInSec: 3600})
 
-	user, err := svc.Register(context.Background(), "100", "password", "")
+	user, err := svc.Register(context.Background(), "100", "password", "", "", "")
 	if err != nil {
 		t.Fatalf("Register returned error: %v", err)
 	}
@@ -26,7 +26,7 @@ func TestRegisterAllowsAgent(t *testing.T) {
 	repo := newStubRepo()
 	svc := NewService(repo, Config{JWTSecret: "secret", JWTExpiresInSec: 3600})
 
-	user, err := svc.Register(context.Background(), "200", "password", model.RoleAgent)
+	user, err := svc.Register(context.Background(), "200", "password", model.RoleAgent, "svc", "agent@example.com")
 	if err != nil {
 		t.Fatalf("Register returned error: %v", err)
 	}
@@ -34,20 +34,33 @@ func TestRegisterAllowsAgent(t *testing.T) {
 	if user.Role != model.RoleAgent {
 		t.Fatalf("expected role %q, got %q", model.RoleAgent, user.Role)
 	}
+	if repo.savedAgent == nil || repo.savedAgent.UserID != user.ID {
+		t.Fatalf("expected agent to be created for user")
+	}
 }
 
 func TestRegisterRejectsAdmin(t *testing.T) {
 	repo := newStubRepo()
 	svc := NewService(repo, Config{JWTSecret: "secret", JWTExpiresInSec: 3600})
 
-	_, err := svc.Register(context.Background(), "300", "password", model.RoleAdmin)
+	_, err := svc.Register(context.Background(), "300", "password", model.RoleAdmin, "", "")
 	if !errors.Is(err, ErrRoleNotAllowed) {
 		t.Fatalf("expected ErrRoleNotAllowed, got %v", err)
 	}
 }
 
+func TestRegisterAgentRequiresDetails(t *testing.T) {
+	repo := newStubRepo()
+	svc := NewService(repo, Config{JWTSecret: "secret", JWTExpiresInSec: 3600})
+
+	if _, err := svc.Register(context.Background(), "400", "password", model.RoleAgent, "", ""); !errors.Is(err, ErrAgentDetailsNeeded) {
+		t.Fatalf("expected ErrAgentDetailsNeeded, got %v", err)
+	}
+}
+
 type stubRepo struct {
-	byPhone map[string]*model.User
+	byPhone    map[string]*model.User
+	savedAgent *model.Agent
 }
 
 func newStubRepo() *stubRepo {
@@ -55,12 +68,13 @@ func newStubRepo() *stubRepo {
 }
 
 func (r *stubRepo) Save(ctx context.Context, entity interface{}) error {
-	user, ok := entity.(*model.User)
-	if !ok {
+	switch v := entity.(type) {
+	case *model.User:
+		r.byPhone[v.Phone] = v
+		return nil
+	default:
 		return errors.New("unexpected entity type")
 	}
-	r.byPhone[user.Phone] = user
-	return nil
 }
 
 func (r *stubRepo) GetUserByPhone(ctx context.Context, phone string) (*model.User, error) {
@@ -78,4 +92,9 @@ func (r *stubRepo) GetUserByID(ctx context.Context, id string) (*model.User, err
 		}
 	}
 	return nil, ErrNotFound
+}
+
+func (r *stubRepo) SaveAgent(ctx context.Context, agent *model.Agent) error {
+	r.savedAgent = agent
+	return nil
 }

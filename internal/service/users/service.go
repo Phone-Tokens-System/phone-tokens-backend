@@ -3,6 +3,7 @@ package users
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -16,6 +17,7 @@ var (
 	ErrPhoneAlreadyUsed   = errors.New("phone already used")
 	ErrInvalidCredentials = errors.New("invalid credentials")
 	ErrRoleNotAllowed     = errors.New("role must be user or agent")
+	ErrAgentDetailsNeeded = errors.New("service_name and email are required for agent role")
 )
 
 type Config struct {
@@ -35,10 +37,14 @@ func NewService(repo Repository, cfg Config) Service {
 	}
 }
 
-func (s *service) Register(ctx context.Context, phone, password string, role model.Role) (*model.User, error) {
+func (s *service) Register(ctx context.Context, phone, password string, role model.Role, serviceName, email string) (*model.User, error) {
 	role, err := sanitizeSelfAssignedRole(role)
 	if err != nil {
 		return nil, err
+	}
+
+	if role == model.RoleAgent && (strings.TrimSpace(serviceName) == "" || strings.TrimSpace(email) == "") {
+		return nil, ErrAgentDetailsNeeded
 	}
 
 	existing, err := s.repo.GetUserByPhone(ctx, phone)
@@ -66,6 +72,23 @@ func (s *service) Register(ctx context.Context, phone, password string, role mod
 
 	if err = s.repo.Save(ctx, user); err != nil {
 		return nil, err
+	}
+
+	if user.Role == model.RoleAgent {
+		agent := &model.Agent{
+			ID:                 uuid.NewString(),
+			UserID:             user.ID,
+			ServiceName:        serviceName,
+			Email:              email,
+			Certificate:        []byte{},
+			CertificateRequest: []byte{},
+			Balance:            0,
+			CreatedAt:          now,
+			UpdatedAt:          now,
+		}
+		if err := s.repo.SaveAgent(ctx, agent); err != nil {
+			return nil, err
+		}
 	}
 
 	return user, nil

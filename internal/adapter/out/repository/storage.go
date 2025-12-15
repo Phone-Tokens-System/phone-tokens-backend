@@ -32,6 +32,10 @@ func (r *Storage) Save(ctx context.Context, entity interface{}) error {
 	return r.db.WithContext(ctx).Save(entity).Error
 }
 
+func (r *Storage) SaveAgent(ctx context.Context, agent *model.Agent) error {
+	return r.db.WithContext(ctx).Save(agent).Error
+}
+
 func (r *Storage) GetUserByPhone(ctx context.Context, phone string) (*model.User, error) {
 	var user model.User
 
