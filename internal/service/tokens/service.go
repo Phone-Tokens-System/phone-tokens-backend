@@ -59,7 +59,7 @@ func (s *service) Issue(ctx context.Context, input IssueInput) (*model.UserToken
 		UserID:      input.UserID,
 		Token:       value,
 		Name:        name,
-		Permissions: perms,
+		Permissions: model.TokenPermissions(perms),
 		Status:      model.TokenStatusActive,
 		ExpiresAt:   now.Add(time.Duration(input.TTLSeconds) * time.Second),
 		CreatedAt:   now,

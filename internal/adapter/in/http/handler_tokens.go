@@ -256,7 +256,7 @@ func toTokenResponse(token *model.UserToken) tokenResponse {
 		ID:          token.ID,
 		Token:       token.Token,
 		Name:        token.Name,
-		Permissions: token.Permissions,
+		Permissions: []model.TokenPermission(token.Permissions),
 		Status:      token.Status,
 		ExpiresAt:   token.ExpiresAt.Format(time.RFC3339),
 		AgentId:     token.AgentId.String(),

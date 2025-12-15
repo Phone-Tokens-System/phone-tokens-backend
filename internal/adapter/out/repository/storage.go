@@ -90,7 +90,7 @@ func (r *Storage) UpdateToken(ctx context.Context, token *model.UserToken) (*mod
 		Where("id = ?", token.ID).
 		Updates(map[string]interface{}{
 			"name":        token.Name,
-			"permissions": toPermissionStrings(token.Permissions),
+			"permissions": token.Permissions,
 			"status":      token.Status,
 			"expires_at":  token.ExpiresAt,
 			"agent_id":    token.AgentId,
@@ -114,14 +114,6 @@ func (r *Storage) DeleteToken(ctx context.Context, id string) error {
 		return tokens.ErrNotFound
 	}
 	return nil
-}
-
-func toPermissionStrings(perms []model.TokenPermission) []string {
-	result := make([]string, 0, len(perms))
-	for _, p := range perms {
-		result = append(result, string(p))
-	}
-	return result
 }
 
 func (r *Storage) SaveCsrRequest(ctx context.Context, request model.CsrRequest) (model.CsrRequest, error) {
