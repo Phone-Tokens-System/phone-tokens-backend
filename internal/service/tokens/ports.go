@@ -2,6 +2,7 @@ package tokens
 
 import (
 	"context"
+	"phone-tokens/internal/adapter/dto"
 
 	"phone-tokens/internal/model"
 
@@ -17,6 +18,7 @@ type Repository interface {
 	GetUserIdFromToken(ctx context.Context, token string) (string, error)
 	GetNumberFromUserId(ctx context.Context, userId string) (string, error)
 	GetTokenByToken(ctx context.Context, token string) (*model.UserToken, error)
+	GetTokensByUserId(ctx context.Context, userId string) ([]model.UserToken, error)
 }
 
 type IssueInput struct {
@@ -34,4 +36,6 @@ type Service interface {
 	Delete(ctx context.Context, userID, tokenID string) error
 	GetUserNumberFromToken(ctx context.Context, token string) (string, error)
 	CheckTokenPermission(ctx context.Context, token string, agentId uuid.UUID, perm model.TokenPermission) (bool, error)
+	BingAgentToTokenByName(ctx context.Context, request dto.BindTokenRequest) (*model.UserToken, error)
+	GetTokensByUser(ctx context.Context, userID string) ([]model.UserToken, error)
 }

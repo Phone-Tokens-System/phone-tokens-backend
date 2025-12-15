@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"phone-tokens/internal/adapter/dto"
 	"time"
 
 	"phone-tokens/internal/model"
@@ -31,6 +32,7 @@ type tokenResponse struct {
 	Permissions []model.TokenPermission `json:"permissions"`
 	Status      model.TokenStatus       `json:"status"`
 	ExpiresAt   string                  `json:"expires_at"`
+	AgentId     string                  `json:"agent_id"`
 }
 
 // CreateToken godoc
@@ -257,9 +259,56 @@ func toTokenResponse(token *model.UserToken) tokenResponse {
 		Permissions: token.Permissions,
 		Status:      token.Status,
 		ExpiresAt:   token.ExpiresAt.Format(time.RFC3339),
+		AgentId:     token.AgentId.String(),
 	}
 }
 
 func isValidationError(err error) bool {
 	return errors.Is(err, tokens.ErrInvalidPermission) || errors.Is(err, tokens.ErrInvalidStatus)
+}
+
+// BindAgentToToken godoc
+// @Summary      Bind agent (service) to token
+// @Description  Привязывает агента (внешний сервис) к пользовательскому токену по имени токена и ид агента
+// @Tags         tokens
+// @Accept       json
+// @Produce      json
+// @Param        request  body      dto.BindTokenRequest  true  "Bind agent to token request"
+// @Success      200      {object}  dto.TokenResponse
+// @Failure      400      {string}  string  "invalid request body"
+// @Failure      401      {string}  string  "unauthorized"
+// @Failure      403      {string}  string  "forbidden"
+// @Failure      404      {string}  string  "not found"
+// @Failure      500      {string}  string  "internal server error"
+// @Router       /tokens/bind-agent [post]
+func (h *TokenHandler) BindAgentToToken(w http.ResponseWriter, r *http.Request) {
+	var req dto.BindTokenRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+	}
+	updatedToken, err := h.service.BingAgentToTokenByName(r.Context(), req)
+	if err != nil {
+		return
+	}
+	err = json.NewEncoder(w).Encode(toTokenResponse(updatedToken))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (h *TokenHandler) GetTokensByUser(w http.ResponseWriter, r *http.Request) {
+	userId := r.PathValue("user_id")
+	if userId == "" {
+		http.Error(w, "user id is required", http.StatusBadRequest)
+		return
+	}
+	tokensByUser, err := h.service.GetTokensByUser(r.Context(), userId)
+	if err != nil {
+		return
+	}
+	err = json.NewEncoder(w).Encode(tokensByUser)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }

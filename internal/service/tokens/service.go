@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"phone-tokens/internal/adapter/dto"
 	"strings"
 	"time"
 
@@ -227,15 +228,27 @@ func (s *service) CheckTokenPermission(ctx context.Context, token string, agentI
 	return false, nil
 }
 
-func (s *service) BingAgentToToken(ctx context.Context, agentId uuid.UUID, tokenId string) (*model.UserToken, error) {
-	tokenObj, err := s.repo.GetTokenByID(ctx, tokenId)
+func (s *service) BingAgentToTokenByName(ctx context.Context, request dto.BindTokenRequest) (*model.UserToken, error) {
+	tokenObj, err := s.repo.GetTokenByToken(ctx, request.TokenName)
 	if err != nil {
 		return nil, err
 	}
-	tokenObj.AgentId = agentId
+	uid, err := uuid.Parse(request.AgentId)
+	if err != nil {
+		return nil, err
+	}
+	tokenObj.AgentId = uid
 	token, err := s.repo.UpdateToken(ctx, tokenObj)
 	if err != nil {
 		return nil, err
 	}
 	return token, nil
+}
+
+func (s *service) GetTokensByUser(ctx context.Context, userID string) ([]model.UserToken, error) {
+	tokens, err := s.repo.GetTokensByUserId(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	return tokens, nil
 }

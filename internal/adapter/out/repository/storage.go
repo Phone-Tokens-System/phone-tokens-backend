@@ -76,6 +76,14 @@ func (r *Storage) GetTokenByID(ctx context.Context, id string) (*model.UserToken
 	return &token, nil
 }
 
+func (r *Storage) GetTokensByUserId(ctx context.Context, userId string) ([]model.UserToken, error) {
+	var token []model.UserToken
+	if err := r.db.WithContext(ctx).Find("user_id = ?", userId).Error; err != nil {
+		return nil, err
+	}
+	return token, nil
+}
+
 func (r *Storage) UpdateToken(ctx context.Context, token *model.UserToken) (*model.UserToken, error) {
 	var updatedToken model.UserToken
 	result := r.db.WithContext(ctx).
@@ -86,6 +94,7 @@ func (r *Storage) UpdateToken(ctx context.Context, token *model.UserToken) (*mod
 			"permissions": toPermissionStrings(token.Permissions),
 			"status":      token.Status,
 			"expires_at":  token.ExpiresAt,
+			"agent_id":    token.AgentId,
 		}).Scan(&updatedToken)
 	if result.Error != nil {
 		return nil, result.Error
