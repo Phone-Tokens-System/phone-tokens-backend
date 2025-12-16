@@ -85,7 +85,7 @@ func (h *SmsHandler) checkStatus(w http.ResponseWriter, req *http.Request) {
 // @Produce json
 // @Success 200 {array} model.SmsResponse "List of sent SMS"
 // @Failure 500 {object} map[string]string "Internal server error"
-// @Router /api/v1/sms/list [get]
+// @Router /api/v1/sms/logs [get]
 func (h *SmsHandler) getSmsList(w http.ResponseWriter, req *http.Request) {
 	smsList, err := h.smsService.GetSmsList(req.Context())
 	if err != nil {
@@ -107,7 +107,7 @@ func (h *SmsHandler) getSmsList(w http.ResponseWriter, req *http.Request) {
 // @Success 200 {array} model.SmsResponse "SMS status details"
 // @Failure 400 {object} map[string]string "Invalid request"
 // @Failure 500 {object} map[string]string "Internal server error"
-// @Router /api/v1/sms/agents/agentId [post]
+// @Router /api/v1/sms/agents/agentId [get]
 func (h *SmsHandler) getSmsListByAgentId(w http.ResponseWriter, req *http.Request) {
 	id := req.PathValue("agentId")
 	smsList, err := h.smsService.GetSmsListByAgentId(req.Context(), id)
@@ -130,7 +130,7 @@ func (h *SmsHandler) getSmsListByAgentId(w http.ResponseWriter, req *http.Reques
 // @Success 200 {array} model.SmsResponse "SMS status details"
 // @Failure 400 {object} map[string]string "Invalid request"
 // @Failure 500 {object} map[string]string "Internal server error"
-// @Router /api/v1/sms/agents/agentId [post]
+// @Router /api/v1/sms/users/userId [get]
 func (h *SmsHandler) getSmsListByUser(w http.ResponseWriter, req *http.Request) {
 	userId := req.PathValue("userId")
 	smsList, err := h.smsService.GetSmsByUser(req.Context(), userId)
