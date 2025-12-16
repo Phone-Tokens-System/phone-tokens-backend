@@ -142,3 +142,24 @@ func (h *SmsHandler) getSmsListByUser(w http.ResponseWriter, req *http.Request) 
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
+
+// getSmsListFromProvider godoc
+// @Summary get sms sent by provider
+// @Description Returns list of sms
+// @Tags SMS
+// @Accept json
+// @Produce json
+// @Success 200 {array} model.SmsResponse "SMS status details"
+// @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /api/v1/sms/all [get]
+func (h *SmsHandler) getSmsListFromProvider(w http.ResponseWriter, req *http.Request) {
+	smsList, err := h.smsService.GetSmsListFromProvider(req.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	err = json.NewEncoder(w).Encode(smsList)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}

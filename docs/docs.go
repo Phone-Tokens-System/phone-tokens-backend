@@ -449,6 +449,50 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/sms/all": {
+            "get": {
+                "description": "Returns list of sms",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SMS"
+                ],
+                "summary": "get sms sent by provider",
+                "responses": {
+                    "200": {
+                        "description": "SMS status details",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.SmsResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/sms/list": {
             "get": {
                 "description": "Returns the list of all sent SMS",
@@ -1179,6 +1223,9 @@ const docTemplate = `{
         "http.registerRequest": {
             "type": "object",
             "properties": {
+                "email": {
+                    "type": "string"
+                },
                 "password": {
                     "type": "string"
                 },
@@ -1187,6 +1234,9 @@ const docTemplate = `{
                 },
                 "role": {
                     "$ref": "#/definitions/model.Role"
+                },
+                "service_name": {
+                    "type": "string"
                 }
             }
         },
@@ -1268,11 +1318,13 @@ const docTemplate = `{
             "type": "string",
             "enum": [
                 "admin",
-                "user"
+                "user",
+                "agent"
             ],
             "x-enum-varnames": [
                 "RoleAdmin",
-                "RoleUser"
+                "RoleUser",
+                "RoleAgent"
             ]
         },
         "model.SmsRequest": {
@@ -1307,6 +1359,9 @@ const docTemplate = `{
                 "extend_status": {
                     "type": "string"
                 },
+                "external_id": {
+                    "type": "string"
+                },
                 "from": {
                     "type": "string"
                 },
@@ -1316,7 +1371,12 @@ const docTemplate = `{
                 "number": {
                     "type": "string"
                 },
-                "raw": {},
+                "raw": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
                 "service_id": {
                     "type": "string"
                 },

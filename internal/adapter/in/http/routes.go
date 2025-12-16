@@ -45,4 +45,5 @@ func RegisterRoutes(mux *http.ServeMux, h Handlers, authCfg AuthConfig) {
 	mux.HandleFunc("GET /api/v1/sms/list", h.Sms.getSmsList)
 	mux.HandleFunc("POST /api/v1/sms/send", h.Sms.sendSMS)
 	mux.HandleFunc("GET /api/v1/sms/status", h.Sms.checkStatus)
+	mux.HandleFunc("GET /api/v1/sms/all", h.Sms.getSmsListFromProvider)
 }

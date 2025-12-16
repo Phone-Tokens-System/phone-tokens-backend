@@ -1,6 +1,7 @@
 package sms_aero
 
 import (
+	"encoding/json"
 	"fmt"
 	"phone-tokens/internal/model"
 	"strconv"
@@ -46,8 +47,12 @@ func (s *AeroService) SendSms(number int, text string) (model.SmsResponse, error
 	if err != nil {
 		return model.SmsResponse{}, err
 	}
+	rawBytes, err := json.Marshal(sendResult)
+	if err != nil {
+		rawBytes = nil
+	}
 	response := model.SmsResponse{
-		Id:           string(rune(sendResult.Id)),
+		ExternalId:   string(rune(sendResult.Id)),
 		From:         sendResult.From,
 		Number:       sendResult.Number,
 		Text:         sendResult.Text,
@@ -56,7 +61,7 @@ func (s *AeroService) SendSms(number int, text string) (model.SmsResponse, error
 		Cost:         sendResult.Cost,
 		DateCreated:  sendResult.DateCreate,
 		DateSent:     sendResult.DateSend,
-		Raw:          sendResult,
+		Raw:          rawBytes,
 	}
 	return response, nil
 }
@@ -94,8 +99,13 @@ func (s *AeroService) GetSmsList() ([]model.SmsResponse, error) {
 		cost, _ := strconv.ParseFloat(fmt.Sprintf("%v", itemMap["cost"]), 64)
 		dateCreated, _ := strconv.Atoi(fmt.Sprintf("%v", itemMap["date_created"]))
 		dateSent, _ := strconv.Atoi(fmt.Sprintf("%v", itemMap["date_sent"]))
+
+		rawMap, err := json.Marshal(itemMap)
+		if err != nil {
+			rawMap = nil
+		}
 		smsResponse := model.SmsResponse{
-			Id:           id,
+			ExternalId:   id,
 			From:         fmt.Sprintf("%v", itemMap["from"]),
 			Number:       fmt.Sprintf("%v", itemMap["number"]),
 			Text:         fmt.Sprintf("%v", itemMap["text"]),
@@ -104,7 +114,7 @@ func (s *AeroService) GetSmsList() ([]model.SmsResponse, error) {
 			Cost:         cost,
 			DateCreated:  dateCreated,
 			DateSent:     dateSent,
-			Raw:          itemMap,
+			Raw:          rawMap,
 		}
 		fmt.Println(smsResponse)
 		//smsItem := make(map[string]string)

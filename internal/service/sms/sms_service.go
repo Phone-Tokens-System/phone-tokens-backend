@@ -58,7 +58,7 @@ func (s *SmsService) SendSms(ctx context.Context, sms model.SmsRequest) (*model.
 	if err != nil {
 		return nil, err
 	}
-
+	sendSms.ServiceId = agentId
 	sendSms.ServiceName = sms.ServiceName
 	err = s.Storage.SaveSms(ctx, sendSms)
 	if err != nil {
@@ -106,8 +106,14 @@ func (s *SmsService) GetSmsByUser(ctx context.Context, userId string) ([]model.S
 	return responses, nil
 }
 
-func (s *SmsService) GetSmsListFromProvider() ([]model.SmsResponse, error) {
+func (s *SmsService) GetSmsListFromProvider(ctx context.Context) ([]model.SmsResponse, error) {
 	responses, err := s.SmsAdapter.GetSmsList()
+	for _, resp := range responses {
+		err = s.Storage.SaveSms(ctx, resp)
+		if err != nil {
+			fmt.Println("Error saving sms ", err)
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
