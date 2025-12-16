@@ -397,7 +397,7 @@ const docTemplate = `{
             }
         },
         "/api/v1/sms/agents/agentId": {
-            "post": {
+            "get": {
                 "description": "Returns list of sms",
                 "consumes": [
                     "application/json"
@@ -408,12 +408,12 @@ const docTemplate = `{
                 "tags": [
                     "SMS"
                 ],
-                "summary": "get sms sent to user",
+                "summary": "get sms sent by agent by id",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "User ID",
-                        "name": "userId",
+                        "description": "Agent ID",
+                        "name": "agentId",
                         "in": "path",
                         "required": true
                     }
@@ -493,7 +493,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/sms/list": {
+        "/api/v1/sms/logs": {
             "get": {
                 "description": "Returns the list of all sent SMS",
                 "consumes": [
@@ -609,6 +609,59 @@ const docTemplate = `{
                         "description": "SMS status details",
                         "schema": {
                             "$ref": "#/definitions/model.SmsStatus"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sms/users/userId": {
+            "get": {
+                "description": "Returns list of sms",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SMS"
+                ],
+                "summary": "get sms sent to user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "SMS status details",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.SmsResponse"
+                            }
                         }
                     },
                     "400": {

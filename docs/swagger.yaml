@@ -439,14 +439,14 @@ paths:
       tags:
       - User
   /api/v1/sms/agents/agentId:
-    post:
+    get:
       consumes:
       - application/json
       description: Returns list of sms
       parameters:
-      - description: User ID
+      - description: Agent ID
         in: path
-        name: userId
+        name: agentId
         required: true
         type: string
       produces:
@@ -470,7 +470,7 @@ paths:
             additionalProperties:
               type: string
             type: object
-      summary: get sms sent to user
+      summary: get sms sent by agent by id
       tags:
       - SMS
   /api/v1/sms/all:
@@ -502,7 +502,7 @@ paths:
       summary: get sms sent by provider
       tags:
       - SMS
-  /api/v1/sms/list:
+  /api/v1/sms/logs:
     get:
       consumes:
       - application/json
@@ -591,6 +591,41 @@ paths:
               type: string
             type: object
       summary: Check SMS status
+      tags:
+      - SMS
+  /api/v1/sms/users/userId:
+    get:
+      consumes:
+      - application/json
+      description: Returns list of sms
+      parameters:
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: SMS status details
+          schema:
+            items:
+              $ref: '#/definitions/model.SmsResponse'
+            type: array
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: get sms sent to user
       tags:
       - SMS
   /api/v1/tokens:
