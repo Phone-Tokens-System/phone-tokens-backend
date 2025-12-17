@@ -287,13 +287,28 @@ func (h *TokenHandler) BindAgentToToken(w http.ResponseWriter, r *http.Request) 
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
-	}
-	updatedToken, err := h.service.BingAgentToTokenByName(r.Context(), req)
-	if err != nil {
 		return
 	}
-	err = json.NewEncoder(w).Encode(toTokenResponse(updatedToken))
+
+	claims, ok := r.Context().Value(userContextKey).(*UserClaims)
+	if !ok || claims.UserID == "" {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	updatedToken, err := h.service.BingAgentToTokenByName(r.Context(), claims.UserID, req)
 	if err != nil {
+		switch err {
+		case tokens.ErrForbidden:
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case tokens.ErrNotFound:
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, "internal error", http.StatusInternalServerError)
+		}
+		return
+	}
+	if err := json.NewEncoder(w).Encode(toTokenResponse(updatedToken)); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -319,6 +334,17 @@ func (h *TokenHandler) GetTokensByUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "user id is required", http.StatusBadRequest)
 		return
 	}
+
+	claims, ok := r.Context().Value(userContextKey).(*UserClaims)
+	if !ok || claims.UserID == "" {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	if claims.UserID != userId {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
 	tokensByUser, err := h.service.GetTokensByUser(r.Context(), userId)
 	if err != nil {
 		return

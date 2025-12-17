@@ -228,10 +228,16 @@ func (s *service) CheckTokenPermission(ctx context.Context, token string, agentI
 	return false, nil
 }
 
-func (s *service) BingAgentToTokenByName(ctx context.Context, request dto.BindTokenRequest) (*model.UserToken, error) {
+func (s *service) BingAgentToTokenByName(ctx context.Context, userID string, request dto.BindTokenRequest) (*model.UserToken, error) {
+	if userID == "" {
+		return nil, errors.New("userID is required")
+	}
 	tokenObj, err := s.repo.GetTokenByToken(ctx, request.TokenName)
 	if err != nil {
 		return nil, err
+	}
+	if tokenObj.UserID != userID {
+		return nil, ErrForbidden
 	}
 	uid, err := uuid.Parse(request.AgentId)
 	if err != nil {
