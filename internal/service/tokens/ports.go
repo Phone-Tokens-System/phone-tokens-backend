@@ -26,6 +26,7 @@ type IssueInput struct {
 	Name        string
 	TTLSeconds  int64
 	Permissions []model.TokenPermission
+	AgentId     string
 }
 
 // Service defines token issuance use cases.

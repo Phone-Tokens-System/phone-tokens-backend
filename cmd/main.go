@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -33,7 +32,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to initialize HTTP server: %v", err)
 	}
-	fmt.Println(services.Cert.Storage)
+
 	go func() {
 		log.Printf("HTTP server started on :%s", cfg.HTTPPort)
 		if err := httpServer.ListenAndServe(); err != nil && err.Error() != "http: Server closed" {

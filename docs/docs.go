@@ -545,6 +545,11 @@ const docTemplate = `{
         },
         "/api/v1/sms/send": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Sends an SMS to the specified phone number",
                 "consumes": [
                     "application/json"
@@ -597,6 +602,11 @@ const docTemplate = `{
         },
         "/api/v1/sms/status": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Returns the status of an SMS by ID",
                 "consumes": [
                     "application/json"
@@ -791,11 +801,13 @@ const docTemplate = `{
                 "summary": "Bind agent (service) to token",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "User ID",
-                        "name": "user_id",
-                        "in": "path",
-                        "required": true
+                        "description": "Bind agent to token request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.BindTokenRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -1172,13 +1184,11 @@ const docTemplate = `{
                 "summary": "Get tokens by user",
                 "parameters": [
                     {
-                        "description": "Bind agent to token request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.BindTokenRequest"
-                        }
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -1270,6 +1280,9 @@ const docTemplate = `{
         "http.createTokenRequest": {
             "type": "object",
             "properties": {
+                "agent_id": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },

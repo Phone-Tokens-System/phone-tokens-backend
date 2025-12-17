@@ -27,6 +27,8 @@ definitions:
     type: object
   http.createTokenRequest:
     properties:
+      agent_id:
+        type: string
       name:
         type: string
       permissions:
@@ -562,6 +564,8 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - BearerAuth: []
       summary: Send an SMS
       tags:
       - SMS
@@ -596,6 +600,8 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - BearerAuth: []
       summary: Check SMS status
       tags:
       - SMS
@@ -888,11 +894,12 @@ paths:
       description: Привязывает агента (внешний сервис) к пользовательскому токену
         по имени токена и ид агента
       parameters:
-      - description: User ID
-        in: path
-        name: user_id
+      - description: Bind agent to token request
+        in: body
+        name: request
         required: true
-        type: string
+        schema:
+          $ref: '#/definitions/dto.BindTokenRequest'
       produces:
       - application/json
       responses:
@@ -931,12 +938,11 @@ paths:
       - application/json
       description: Получение токенов пользователя
       parameters:
-      - description: Bind agent to token request
-        in: body
-        name: request
+      - description: User ID
+        in: path
+        name: userId
         required: true
-        schema:
-          $ref: '#/definitions/dto.BindTokenRequest'
+        type: string
       produces:
       - application/json
       responses:

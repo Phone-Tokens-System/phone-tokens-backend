@@ -52,6 +52,10 @@ func (s *service) Issue(ctx context.Context, input IssueInput) (*model.UserToken
 	if err != nil {
 		return nil, err
 	}
+	uid, err := uuid.Parse(input.AgentId)
+	if err != nil {
+		return nil, err
+	}
 
 	now := time.Now().UTC()
 	token := &model.UserToken{
@@ -63,6 +67,7 @@ func (s *service) Issue(ctx context.Context, input IssueInput) (*model.UserToken
 		Status:      model.TokenStatusActive,
 		ExpiresAt:   now.Add(time.Duration(input.TTLSeconds) * time.Second),
 		CreatedAt:   now,
+		AgentId:     uid,
 	}
 
 	if err := s.repo.CreateToken(ctx, token); err != nil {
@@ -253,6 +258,7 @@ func (s *service) BingAgentToTokenByName(ctx context.Context, userID string, req
 
 func (s *service) GetTokensByUser(ctx context.Context, userID string) ([]model.UserToken, error) {
 	tokens, err := s.repo.GetTokensByUserId(ctx, userID)
+	fmt.Println(tokens)
 	if err != nil {
 		return nil, err
 	}
