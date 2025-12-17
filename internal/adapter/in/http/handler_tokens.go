@@ -24,6 +24,7 @@ type createTokenRequest struct {
 	Name        string                  `json:"name"`
 	Permissions []model.TokenPermission `json:"permissions"`
 	TTLSeconds  int64                   `json:"ttl_seconds"`
+	AgentId     string                  `json:"agent_id"`
 }
 
 type tokenResponse struct {
@@ -65,14 +66,16 @@ func (h *TokenHandler) CreateToken(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
-
+	fmt.Println(req)
 	token, err := h.service.Issue(r.Context(), tokens.IssueInput{
 		UserID:      claims.UserID,
 		Name:        req.Name,
 		Permissions: req.Permissions,
 		TTLSeconds:  req.TTLSeconds,
+		AgentId:     req.AgentId,
 	})
 	if err != nil {
+		fmt.Println(err)
 		if isValidationError(err) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return

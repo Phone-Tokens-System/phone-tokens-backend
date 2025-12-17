@@ -1270,6 +1270,9 @@ const docTemplate = `{
         "http.createTokenRequest": {
             "type": "object",
             "properties": {
+                "agent_id": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },

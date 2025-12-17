@@ -27,6 +27,8 @@ definitions:
     type: object
   http.createTokenRequest:
     properties:
+      agent_id:
+        type: string
       name:
         type: string
       permissions:

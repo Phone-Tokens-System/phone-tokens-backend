@@ -52,6 +52,10 @@ func (s *service) Issue(ctx context.Context, input IssueInput) (*model.UserToken
 	if err != nil {
 		return nil, err
 	}
+	uid, err := uuid.Parse(input.AgentId)
+	if err != nil {
+		return nil, err
+	}
 
 	now := time.Now().UTC()
 	token := &model.UserToken{
@@ -63,6 +67,7 @@ func (s *service) Issue(ctx context.Context, input IssueInput) (*model.UserToken
 		Status:      model.TokenStatusActive,
 		ExpiresAt:   now.Add(time.Duration(input.TTLSeconds) * time.Second),
 		CreatedAt:   now,
+		AgentId:     uid,
 	}
 
 	if err := s.repo.CreateToken(ctx, token); err != nil {
