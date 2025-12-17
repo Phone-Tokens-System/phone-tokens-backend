@@ -21,6 +21,7 @@ func NewSmsHandler(smsService *sms.SmsService) *SmsHandler {
 // @Summary Send an SMS
 // @Description Sends an SMS to the specified phone number
 // @Tags SMS
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param request body model.SmsRequest true "SMS request payload"
@@ -53,6 +54,7 @@ func (h *SmsHandler) sendSMS(w http.ResponseWriter, req *http.Request) {
 // @Summary Check SMS status
 // @Description Returns the status of an SMS by ID
 // @Tags SMS
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param smsId body dto.SmsId true "SMS ID payload"

@@ -545,6 +545,11 @@ const docTemplate = `{
         },
         "/api/v1/sms/send": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Sends an SMS to the specified phone number",
                 "consumes": [
                     "application/json"
@@ -597,6 +602,11 @@ const docTemplate = `{
         },
         "/api/v1/sms/status": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Returns the status of an SMS by ID",
                 "consumes": [
                     "application/json"

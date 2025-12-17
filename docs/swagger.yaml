@@ -564,6 +564,8 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - BearerAuth: []
       summary: Send an SMS
       tags:
       - SMS
@@ -598,6 +600,8 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - BearerAuth: []
       summary: Check SMS status
       tags:
       - SMS
