@@ -16,10 +16,11 @@ func NewHTTPServer(httpPort string, jwtSecret string, handlers httpadapter.Handl
 	httpadapter.RegisterRoutes(mux, handlers, httpadapter.AuthConfig{
 		JWTSecret: jwtSecret,
 	})
+	handler := httpadapter.CORSMiddleware(mux)
 
 	server := &http.Server{
 		Addr:    ":" + httpPort,
-		Handler: mux,
+		Handler: handler,
 	}
 
 	return server, nil
