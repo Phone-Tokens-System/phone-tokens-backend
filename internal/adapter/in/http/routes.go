@@ -36,7 +36,8 @@ func RegisterRoutes(mux *http.ServeMux, h Handlers, authCfg AuthConfig) {
 	mux.Handle("DELETE /api/v1/tokens/{tokenID}", authMiddleware(http.HandlerFunc(h.Token.DeleteToken)))
 	mux.Handle("PATCH /api/v1/tokens/{tokenID}/freeze", authMiddleware(http.HandlerFunc(h.Token.FreezeToken)))
 	mux.Handle("PATCH /api/v1/tokens/{tokenID}/unfreeze", authMiddleware(http.HandlerFunc(h.Token.UnfreezeToken)))
-
+	mux.Handle("GET /api/v1/users/{userId}/tokens", authMiddleware(http.HandlerFunc(h.Token.GetTokensByUser)))
+	mux.Handle("POST /api/v1/tokens/bing-agent", authMiddleware(http.HandlerFunc(h.Token.BindAgentToToken)))
 	// certificates
 	mux.HandleFunc("POST /api/v1/csr", h.Agent.AcceptCSRRequest)
 	mux.HandleFunc("GET /api/v1/csr/signed", h.Agent.GetSignedCertificate)
@@ -46,10 +47,10 @@ func RegisterRoutes(mux *http.ServeMux, h Handlers, authCfg AuthConfig) {
 
 	//sms
 	mux.Handle("GET /api/v1/sms/logs", authMiddleware(RequireRole("admin", http.HandlerFunc(h.Sms.getSmsList))))
-	mux.HandleFunc("POST /api/v1/sms/send", h.Sms.sendSMS)
-	mux.HandleFunc("GET /api/v1/sms/status", h.Sms.checkStatus)
+	mux.Handle("POST /api/v1/sms/send", authMiddleware(RequireRole("admin", http.HandlerFunc(h.Sms.sendSMS))))
+	mux.Handle("GET /api/v1/sms/status", authMiddleware(RequireRole("admin", http.HandlerFunc(h.Sms.sendSMS))))
 	mux.Handle("GET /api/v1/sms/all", authMiddleware(RequireRole("admin", http.HandlerFunc(h.Sms.getSmsListFromProvider))))
 
-	mux.Handle("GET /api/v1/sms/users/userId", authMiddleware(http.HandlerFunc(h.Sms.getSmsListByUser)))
-	mux.Handle("GET /api/v1/sms/agents/agentId", authMiddleware(http.HandlerFunc(h.Sms.getSmsListByAgentId)))
+	mux.Handle("GET /api/v1/sms/users/{token}", authMiddleware(http.HandlerFunc(h.Sms.getSmsListByToken)))
+	mux.Handle("GET /api/v1/sms/agents/{agentId}", authMiddleware(http.HandlerFunc(h.Sms.getSmsListByAgentId)))
 }

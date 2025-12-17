@@ -6,6 +6,10 @@ import (
 	"testing"
 	"time"
 
+	"phone-tokens/internal/adapter/dto"
+
+	"github.com/google/uuid"
+
 	"phone-tokens/internal/model"
 )
 
@@ -239,6 +243,64 @@ func TestServiceSetStatus(t *testing.T) {
 	}
 	if repo.tokens[token.ID].Status != model.TokenStatusFrozen {
 		t.Fatalf("repository not updated")
+	}
+}
+
+func TestBindAgentRequiresOwnership(t *testing.T) {
+	repo := newMemoryRepo()
+	svc := NewService(repo)
+
+	token := &model.UserToken{
+		ID:          "token-bind",
+		UserID:      "owner",
+		Token:       "value",
+		Name:        "bind-me",
+		Permissions: model.TokenPermissions(DefaultTokenPermissions),
+		Status:      model.TokenStatusActive,
+		ExpiresAt:   time.Now().UTC().Add(time.Hour),
+		CreatedAt:   time.Now().UTC(),
+	}
+	repo.tokens[token.ID] = token
+
+	_, err := svc.BingAgentToTokenByName(context.Background(), "other-user", dto.BindTokenRequest{
+		AgentId:   uuid.NewString(),
+		TokenName: token.Token,
+	})
+	if err := assertError(t, err, ErrForbidden); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestBindAgentSuccess(t *testing.T) {
+	repo := newMemoryRepo()
+	svc := NewService(repo)
+
+	token := &model.UserToken{
+		ID:          "token-bind-success",
+		UserID:      "owner",
+		Token:       "value",
+		Name:        "bind-me",
+		Permissions: model.TokenPermissions(DefaultTokenPermissions),
+		Status:      model.TokenStatusActive,
+		ExpiresAt:   time.Now().UTC().Add(time.Hour),
+		CreatedAt:   time.Now().UTC(),
+	}
+	repo.tokens[token.ID] = token
+
+	agentID := uuid.NewString()
+
+	updated, err := svc.BingAgentToTokenByName(context.Background(), token.UserID, dto.BindTokenRequest{
+		AgentId:   agentID,
+		TokenName: token.Token,
+	})
+	if err != nil {
+		t.Fatalf("BingAgentToTokenByName returned error: %v", err)
+	}
+	if updated.AgentId.String() != agentID {
+		t.Fatalf("expected agent id %s, got %s", agentID, updated.AgentId)
+	}
+	if repo.tokens[token.ID].AgentId.String() != agentID {
+		t.Fatalf("repository not updated with agent id")
 	}
 }
 

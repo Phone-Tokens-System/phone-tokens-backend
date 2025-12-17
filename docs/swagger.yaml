@@ -48,19 +48,6 @@ definitions:
       token:
         type: string
     type: object
-  http.registerRequest:
-    properties:
-      email:
-        type: string
-      password:
-        type: string
-      phone:
-        type: string
-      role:
-        $ref: '#/definitions/model.Role'
-      service_name:
-        type: string
-    type: object
   http.registerResponse:
     properties:
       id:
@@ -146,8 +133,6 @@ definitions:
         type: string
       id:
         type: string
-      number:
-        type: string
       raw:
         items:
           type: integer
@@ -159,6 +144,8 @@ definitions:
       status:
         type: integer
       text:
+        type: string
+      token:
         type: string
     type: object
   model.SmsStatus:
@@ -188,6 +175,19 @@ definitions:
     x-enum-varnames:
     - TokenStatusActive
     - TokenStatusFrozen
+  users.RegisterRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+      phone:
+        type: string
+      role:
+        $ref: '#/definitions/model.Role'
+      service_name:
+        type: string
+    type: object
 info:
   contact: {}
 paths:
@@ -409,7 +409,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/http.registerRequest'
+          $ref: '#/definitions/users.RegisterRequest'
       produces:
       - application/json
       responses:
@@ -438,7 +438,7 @@ paths:
       summary: Register a new user
       tags:
       - User
-  /api/v1/sms/agents/agentId:
+  /api/v1/sms/agents/{agentId}:
     get:
       consumes:
       - application/json
@@ -470,6 +470,8 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - BearerAuth: []
       summary: get sms sent by agent by id
       tags:
       - SMS
@@ -499,6 +501,8 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - BearerAuth: []
       summary: get sms sent by provider
       tags:
       - SMS
@@ -522,6 +526,8 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - BearerAuth: []
       summary: Get all SMS
       tags:
       - SMS
@@ -593,15 +599,15 @@ paths:
       summary: Check SMS status
       tags:
       - SMS
-  /api/v1/sms/users/userId:
+  /api/v1/sms/users/{token}:
     get:
       consumes:
       - application/json
       description: Returns list of sms
       parameters:
-      - description: User ID
+      - description: user token
         in: path
-        name: userId
+        name: token
         required: true
         type: string
       produces:
@@ -625,7 +631,9 @@ paths:
             additionalProperties:
               type: string
             type: object
-      summary: get sms sent to user
+      security:
+      - BearerAuth: []
+      summary: get sms sent to given token
       tags:
       - SMS
   /api/v1/tokens:
@@ -873,7 +881,7 @@ paths:
       summary: Unfreeze a token
       tags:
       - Token
-  /tokens/bind-agent:
+  /api/v1/tokens/bing-agent:
     post:
       consumes:
       - application/json
@@ -912,10 +920,12 @@ paths:
           description: internal server error
           schema:
             type: string
+      security:
+      - BearerAuth: []
       summary: Bind agent (service) to token
       tags:
-      - tokens
-  /users/{user_id}/tokens:
+      - Token
+  /api/v1/users/{userId}/tokens:
     get:
       consumes:
       - application/json
@@ -956,9 +966,11 @@ paths:
           description: internal server error
           schema:
             type: string
+      security:
+      - BearerAuth: []
       summary: Get tokens by user
       tags:
-      - tokens
+      - Token
 securityDefinitions:
   BearerAuth:
     description: Type "Bearer " followed by your JWT token

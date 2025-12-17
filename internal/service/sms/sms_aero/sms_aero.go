@@ -52,9 +52,8 @@ func (s *AeroService) SendSms(number int, text string) (model.SmsResponse, error
 		rawBytes = nil
 	}
 	response := model.SmsResponse{
-		ExternalId:   string(rune(sendResult.Id)),
+		ExternalId:   strconv.Itoa(sendResult.Id),
 		From:         sendResult.From,
-		Number:       sendResult.Number,
 		Text:         sendResult.Text,
 		Status:       sendResult.Status,
 		ExtendStatus: sendResult.ExtendStatus,
@@ -107,7 +106,6 @@ func (s *AeroService) GetSmsList() ([]model.SmsResponse, error) {
 		smsResponse := model.SmsResponse{
 			ExternalId:   id,
 			From:         fmt.Sprintf("%v", itemMap["from"]),
-			Number:       fmt.Sprintf("%v", itemMap["number"]),
 			Text:         fmt.Sprintf("%v", itemMap["text"]),
 			Status:       status,
 			ExtendStatus: fmt.Sprintf("%v", itemMap["extend_status"]),
