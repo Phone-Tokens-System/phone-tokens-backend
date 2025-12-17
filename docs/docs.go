@@ -398,6 +398,11 @@ const docTemplate = `{
         },
         "/api/v1/sms/agents/agentId": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Returns list of sms",
                 "consumes": [
                     "application/json"
@@ -451,6 +456,11 @@ const docTemplate = `{
         },
         "/api/v1/sms/all": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Returns list of sms",
                 "consumes": [
                     "application/json"
@@ -495,6 +505,11 @@ const docTemplate = `{
         },
         "/api/v1/sms/logs": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Returns the list of all sent SMS",
                 "consumes": [
                     "application/json"
@@ -632,8 +647,13 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/sms/users/userId": {
+        "/api/v1/sms/users/token": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Returns list of sms",
                 "consumes": [
                     "application/json"
@@ -644,12 +664,12 @@ const docTemplate = `{
                 "tags": [
                     "SMS"
                 ],
-                "summary": "get sms sent to user",
+                "summary": "get sms sent to given token",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "User ID",
-                        "name": "userId",
+                        "description": "user token",
+                        "name": "token",
                         "in": "path",
                         "required": true
                     }
@@ -1067,6 +1087,11 @@ const docTemplate = `{
         },
         "/tokens/bind-agent": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Привязывает агента (внешний сервис) к пользовательскому токену по имени токена и ид агента",
                 "consumes": [
                     "application/json"
@@ -1129,6 +1154,11 @@ const docTemplate = `{
         },
         "/users/{user_id}/tokens": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Получение токенов пользователя",
                 "consumes": [
                     "application/json"
@@ -1421,9 +1451,6 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
-                "number": {
-                    "type": "string"
-                },
                 "raw": {
                     "type": "array",
                     "items": {
@@ -1440,6 +1467,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "text": {
+                    "type": "string"
+                },
+                "token": {
                     "type": "string"
                 }
             }

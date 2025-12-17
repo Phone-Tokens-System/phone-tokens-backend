@@ -146,8 +146,6 @@ definitions:
         type: string
       id:
         type: string
-      number:
-        type: string
       raw:
         items:
           type: integer
@@ -159,6 +157,8 @@ definitions:
       status:
         type: integer
       text:
+        type: string
+      token:
         type: string
     type: object
   model.SmsStatus:
@@ -470,6 +470,8 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - BearerAuth: []
       summary: get sms sent by agent by id
       tags:
       - SMS
@@ -499,6 +501,8 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - BearerAuth: []
       summary: get sms sent by provider
       tags:
       - SMS
@@ -522,6 +526,8 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - BearerAuth: []
       summary: Get all SMS
       tags:
       - SMS
@@ -593,15 +599,15 @@ paths:
       summary: Check SMS status
       tags:
       - SMS
-  /api/v1/sms/users/userId:
+  /api/v1/sms/users/token:
     get:
       consumes:
       - application/json
       description: Returns list of sms
       parameters:
-      - description: User ID
+      - description: user token
         in: path
-        name: userId
+        name: token
         required: true
         type: string
       produces:
@@ -625,7 +631,9 @@ paths:
             additionalProperties:
               type: string
             type: object
-      summary: get sms sent to user
+      security:
+      - BearerAuth: []
+      summary: get sms sent to given token
       tags:
       - SMS
   /api/v1/tokens:
@@ -912,6 +920,8 @@ paths:
           description: internal server error
           schema:
             type: string
+      security:
+      - BearerAuth: []
       summary: Bind agent (service) to token
       tags:
       - tokens
@@ -956,6 +966,8 @@ paths:
           description: internal server error
           schema:
             type: string
+      security:
+      - BearerAuth: []
       summary: Get tokens by user
       tags:
       - tokens

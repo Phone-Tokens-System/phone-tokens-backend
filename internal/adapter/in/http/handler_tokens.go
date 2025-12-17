@@ -270,6 +270,7 @@ func isValidationError(err error) bool {
 // BindAgentToToken godoc
 // @Summary      Bind agent (service) to token
 // @Description  Привязывает агента (внешний сервис) к пользовательскому токену по имени токена и ид агента
+// @Security BearerAuth
 // @Tags         tokens
 // @Accept       json
 // @Produce      json
@@ -300,6 +301,7 @@ func (h *TokenHandler) BindAgentToToken(w http.ResponseWriter, r *http.Request) 
 // GetTokensByUser godoc
 // @Summary      Get tokens by user
 // @Description  Получение токенов пользователя
+// @Security BearerAuth
 // @Tags         tokens
 // @Accept       json
 // @Produce      json
