@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"phone_token_system/internal/model"
+	"phone-tokens/internal/model"
 )
 
 func TestServiceUpdateTTLSuccess(t *testing.T) {
@@ -14,11 +14,14 @@ func TestServiceUpdateTTLSuccess(t *testing.T) {
 	svc := NewService(repo)
 
 	token := &model.UserToken{
-		ID:        "token-1",
-		UserID:    "user-1",
-		Token:     "value",
-		ExpiresAt: time.Now().UTC().Add(time.Hour),
-		CreatedAt: time.Now().UTC(),
+		ID:          "token-1",
+		UserID:      "user-1",
+		Token:       "value",
+		Name:        "main",
+		Permissions: model.TokenPermissions(DefaultTokenPermissions),
+		Status:      model.TokenStatusActive,
+		ExpiresAt:   time.Now().UTC().Add(time.Hour),
+		CreatedAt:   time.Now().UTC(),
 	}
 	repo.tokens[token.ID] = token
 
@@ -48,11 +51,14 @@ func TestServiceUpdateTTLForbidden(t *testing.T) {
 	svc := NewService(repo)
 
 	token := &model.UserToken{
-		ID:        "token-2",
-		UserID:    "owner",
-		Token:     "value",
-		ExpiresAt: time.Now().UTC().Add(time.Hour),
-		CreatedAt: time.Now().UTC(),
+		ID:          "token-2",
+		UserID:      "owner",
+		Token:       "value",
+		Name:        "secondary",
+		Permissions: model.TokenPermissions(DefaultTokenPermissions),
+		Status:      model.TokenStatusActive,
+		ExpiresAt:   time.Now().UTC().Add(time.Hour),
+		CreatedAt:   time.Now().UTC(),
 	}
 	repo.tokens[token.ID] = token
 
@@ -95,11 +101,14 @@ func TestServiceDeleteSuccess(t *testing.T) {
 	svc := NewService(repo)
 
 	token := &model.UserToken{
-		ID:        "token-3",
-		UserID:    "user-1",
-		Token:     "value",
-		ExpiresAt: time.Now().UTC().Add(time.Hour),
-		CreatedAt: time.Now().UTC(),
+		ID:          "token-3",
+		UserID:      "user-1",
+		Token:       "value",
+		Name:        "to-delete",
+		Permissions: model.TokenPermissions(DefaultTokenPermissions),
+		Status:      model.TokenStatusActive,
+		ExpiresAt:   time.Now().UTC().Add(time.Hour),
+		CreatedAt:   time.Now().UTC(),
 	}
 	repo.tokens[token.ID] = token
 
@@ -116,11 +125,14 @@ func TestServiceDeleteForbidden(t *testing.T) {
 	svc := NewService(repo)
 
 	token := &model.UserToken{
-		ID:        "token-4",
-		UserID:    "owner",
-		Token:     "value",
-		ExpiresAt: time.Now().UTC().Add(time.Hour),
-		CreatedAt: time.Now().UTC(),
+		ID:          "token-4",
+		UserID:      "owner",
+		Token:       "value",
+		Name:        "locked",
+		Permissions: model.TokenPermissions(DefaultTokenPermissions),
+		Status:      model.TokenStatusActive,
+		ExpiresAt:   time.Now().UTC().Add(time.Hour),
+		CreatedAt:   time.Now().UTC(),
 	}
 	repo.tokens[token.ID] = token
 
@@ -153,13 +165,92 @@ func TestServiceDeleteValidation(t *testing.T) {
 	}
 }
 
+func TestServiceIssueDefaults(t *testing.T) {
+	repo := newMemoryRepo()
+	svc := NewService(repo)
+
+	ttl := int64(120)
+	before := time.Now().UTC()
+	token, err := svc.Issue(context.Background(), IssueInput{
+		UserID:     "user-issue",
+		TTLSeconds: ttl,
+	})
+	if err != nil {
+		t.Fatalf("Issue returned error: %v", err)
+	}
+	if token.Name != DefaultTokenName {
+		t.Fatalf("expected default name %q, got %q", DefaultTokenName, token.Name)
+	}
+	if len(token.Permissions) != len(DefaultTokenPermissions) {
+		t.Fatalf("expected default permissions, got %v", token.Permissions)
+	}
+	if token.Status != model.TokenStatusActive {
+		t.Fatalf("expected status active, got %s", token.Status)
+	}
+	if token.ExpiresAt.Before(before.Add(time.Duration(ttl) * time.Second)) {
+		t.Fatalf("unexpected expires_at: %v", token.ExpiresAt)
+	}
+}
+
+func TestServiceIssueCustomPermissions(t *testing.T) {
+	repo := newMemoryRepo()
+	svc := NewService(repo)
+
+	token, err := svc.Issue(context.Background(), IssueInput{
+		UserID:     "user-perms",
+		TTLSeconds: 60,
+		Name:       "calls-only",
+		Permissions: []model.TokenPermission{
+			model.TokenPermissionCalls,
+			model.TokenPermissionCalls,
+		},
+	})
+	if err != nil {
+		t.Fatalf("Issue returned error: %v", err)
+	}
+
+	if len(token.Permissions) != 1 || token.Permissions[0] != model.TokenPermissionCalls {
+		t.Fatalf("unexpected permissions: %v", token.Permissions)
+	}
+}
+
+func TestServiceSetStatus(t *testing.T) {
+	repo := newMemoryRepo()
+	svc := NewService(repo)
+
+	token := &model.UserToken{
+		ID:          "token-5",
+		UserID:      "owner",
+		Token:       "value",
+		Name:        "freeze-me",
+		Permissions: model.TokenPermissions(DefaultTokenPermissions),
+		Status:      model.TokenStatusActive,
+		ExpiresAt:   time.Now().UTC().Add(time.Hour),
+		CreatedAt:   time.Now().UTC(),
+	}
+	repo.tokens[token.ID] = token
+
+	updated, err := svc.SetStatus(context.Background(), token.UserID, token.ID, model.TokenStatusFrozen)
+	if err != nil {
+		t.Fatalf("SetStatus returned error: %v", err)
+	}
+	if updated.Status != model.TokenStatusFrozen {
+		t.Fatalf("expected frozen status, got %s", updated.Status)
+	}
+	if repo.tokens[token.ID].Status != model.TokenStatusFrozen {
+		t.Fatalf("repository not updated")
+	}
+}
+
 type memoryRepo struct {
-	tokens map[string]*model.UserToken
+	tokens      map[string]*model.UserToken
+	phonesByUID map[string]string
 }
 
 func newMemoryRepo() *memoryRepo {
 	return &memoryRepo{
-		tokens: make(map[string]*model.UserToken),
+		tokens:      make(map[string]*model.UserToken),
+		phonesByUID: make(map[string]string),
 	}
 }
 
@@ -176,12 +267,12 @@ func (r *memoryRepo) GetTokenByID(_ context.Context, id string) (*model.UserToke
 	return token, nil
 }
 
-func (r *memoryRepo) UpdateToken(_ context.Context, token *model.UserToken) error {
+func (r *memoryRepo) UpdateToken(_ context.Context, token *model.UserToken) (*model.UserToken, error) {
 	if _, ok := r.tokens[token.ID]; !ok {
-		return ErrNotFound
+		return nil, ErrNotFound
 	}
 	r.tokens[token.ID] = token
-	return nil
+	return token, nil
 }
 
 func (r *memoryRepo) DeleteToken(_ context.Context, id string) error {
@@ -190,6 +281,41 @@ func (r *memoryRepo) DeleteToken(_ context.Context, id string) error {
 	}
 	delete(r.tokens, id)
 	return nil
+}
+
+func (r *memoryRepo) GetUserIdFromToken(_ context.Context, token string) (string, error) {
+	for _, t := range r.tokens {
+		if t.Token == token {
+			return t.UserID, nil
+		}
+	}
+	return "", ErrNotFound
+}
+
+func (r *memoryRepo) GetNumberFromUserId(_ context.Context, userId string) (string, error) {
+	if phone, ok := r.phonesByUID[userId]; ok {
+		return phone, nil
+	}
+	return "", ErrNotFound
+}
+
+func (r *memoryRepo) GetTokenByToken(_ context.Context, token string) (*model.UserToken, error) {
+	for _, t := range r.tokens {
+		if t.Token == token {
+			return t, nil
+		}
+	}
+	return nil, ErrNotFound
+}
+
+func (r *memoryRepo) GetTokensByUserId(_ context.Context, userId string) ([]model.UserToken, error) {
+	result := make([]model.UserToken, 0)
+	for _, t := range r.tokens {
+		if t.UserID == userId {
+			result = append(result, *t)
+		}
+	}
+	return result, nil
 }
 
 func assertError(t *testing.T, err error, expected error) error {

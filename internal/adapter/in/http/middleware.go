@@ -7,7 +7,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 
-	"phone_token_system/internal/model"
+	"phone-tokens/internal/model"
 )
 
 type contextKey string

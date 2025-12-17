@@ -1,29 +1,39 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
+	"phone-tokens/internal/adapter/in"
+	httpadapter "phone-tokens/internal/adapter/in/http"
+	"phone-tokens/internal/app"
 	"syscall"
-
-	server "phone_token_system/internal/adapter/in"
-	"phone_token_system/internal/app"
 )
 
 // Entry point for the monolithic HTTP server.
-func main() {
-	cfg := app.LoadConfig()
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer " followed by your JWT token
 
-	userSvc, tokenSvc, err := app.BuildService(cfg)
+func main() {
+	cfg, err := app.LoadConfig()
 	if err != nil {
-		log.Fatalf("failed to initialize service: %v", err)
+		log.Fatal(err)
 	}
 
-	httpServer, err := server.NewHTTPServer(cfg.HTTPPort, cfg.JWTSecret, userSvc, tokenSvc)
+	services, err := app.BuildService(cfg)
+	if err != nil {
+		log.Fatalf("failed to initialize sms: %v", err)
+	}
+	handlers := httpadapter.BuildHandlers(*services)
+
+	httpServer, err := in.NewHTTPServer(cfg.HTTPPort, cfg.JWTSecret, *handlers)
 	if err != nil {
 		log.Fatalf("failed to initialize HTTP server: %v", err)
 	}
-
+	fmt.Println(services.Cert.Storage)
 	go func() {
 		log.Printf("HTTP server started on :%s", cfg.HTTPPort)
 		if err := httpServer.ListenAndServe(); err != nil && err.Error() != "http: Server closed" {
