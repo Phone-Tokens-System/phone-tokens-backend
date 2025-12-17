@@ -219,7 +219,13 @@ func (r *Storage) GetSmsByServiceId(ctx context.Context, serviceId string) ([]mo
 
 func (r *Storage) GetSmsByToken(ctx context.Context, token string) ([]model.SmsResponse, error) {
 	smsResponse := []model.SmsResponse{}
-	err := r.db.WithContext(ctx).Find(&smsResponse, "token = ?", token).Error
+	fmt.Println(token)
+	//err := r.db.WithContext(ctx).Find(&smsResponse, "token = ?", token).Error
+	err := r.db.Debug().
+		WithContext(ctx).
+		Find(&smsResponse, "token = ?", token).
+		Error
+
 	return smsResponse, err
 }
 

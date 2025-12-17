@@ -2,6 +2,7 @@ package http
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"phone-tokens/internal/adapter/dto"
 	"phone-tokens/internal/model"
@@ -109,7 +110,7 @@ func (h *SmsHandler) getSmsList(w http.ResponseWriter, req *http.Request) {
 // @Success 200 {array} model.SmsResponse "SMS status details"
 // @Failure 400 {object} map[string]string "Invalid request"
 // @Failure 500 {object} map[string]string "Internal server error"
-// @Router /api/v1/sms/agents/agentId [get]
+// @Router /api/v1/sms/agents/{agentId} [get]
 func (h *SmsHandler) getSmsListByAgentId(w http.ResponseWriter, req *http.Request) {
 	id := req.PathValue("agentId")
 	smsList, err := h.smsService.GetSmsListByAgentId(req.Context(), id)
@@ -133,10 +134,14 @@ func (h *SmsHandler) getSmsListByAgentId(w http.ResponseWriter, req *http.Reques
 // @Success 200 {array} model.SmsResponse "SMS status details"
 // @Failure 400 {object} map[string]string "Invalid request"
 // @Failure 500 {object} map[string]string "Internal server error"
-// @Router /api/v1/sms/users/token [get]
+// @Router /api/v1/sms/users/{token} [get]
 func (h *SmsHandler) getSmsListByToken(w http.ResponseWriter, req *http.Request) {
-	userId := req.PathValue("token")
-	smsList, err := h.smsService.GetSmsByToken(req.Context(), userId)
+	token := req.PathValue("token")
+	fmt.Println("token" + token)
+	fmt.Println("raw URL:", req.URL.Path)
+	fmt.Println("RequestURI:", req.RequestURI)
+
+	smsList, err := h.smsService.GetSmsByToken(req.Context(), token)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

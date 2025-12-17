@@ -396,7 +396,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/sms/agents/agentId": {
+        "/api/v1/sms/agents/{agentId}": {
             "get": {
                 "security": [
                     {
@@ -647,7 +647,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/sms/users/token": {
+        "/api/v1/sms/users/{token}": {
             "get": {
                 "security": [
                     {

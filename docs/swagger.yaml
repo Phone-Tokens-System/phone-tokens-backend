@@ -438,7 +438,7 @@ paths:
       summary: Register a new user
       tags:
       - User
-  /api/v1/sms/agents/agentId:
+  /api/v1/sms/agents/{agentId}:
     get:
       consumes:
       - application/json
@@ -599,7 +599,7 @@ paths:
       summary: Check SMS status
       tags:
       - SMS
-  /api/v1/sms/users/token:
+  /api/v1/sms/users/{token}:
     get:
       consumes:
       - application/json

@@ -96,6 +96,7 @@ func (s *SmsService) GetSmsListByAgentId(ctx context.Context, agentId string) ([
 
 func (s *SmsService) GetSmsByToken(ctx context.Context, token string) ([]model.SmsResponse, error) {
 	responses, err := s.Storage.GetSmsByToken(ctx, token)
+	fmt.Println(responses)
 	if err != nil {
 		return nil, err
 	}
