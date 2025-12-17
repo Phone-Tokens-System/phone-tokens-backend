@@ -881,7 +881,7 @@ paths:
       summary: Unfreeze a token
       tags:
       - Token
-  /tokens/bind-agent:
+  /api/v1/tokens/bing-agent:
     post:
       consumes:
       - application/json
@@ -925,7 +925,7 @@ paths:
       summary: Bind agent (service) to token
       tags:
       - tokens
-  /users/{user_id}/tokens:
+  /api/v1/users/{userId}/tokens:
     get:
       consumes:
       - application/json

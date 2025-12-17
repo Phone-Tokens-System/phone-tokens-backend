@@ -281,7 +281,7 @@ func isValidationError(err error) bool {
 // @Failure      403      {string}  string  "forbidden"
 // @Failure      404      {string}  string  "not found"
 // @Failure      500      {string}  string  "internal server error"
-// @Router       /tokens/bind-agent [post]
+// @Router       /api/v1/tokens/bing-agent [post]
 func (h *TokenHandler) BindAgentToToken(w http.ResponseWriter, r *http.Request) {
 	var req dto.BindTokenRequest
 
@@ -312,9 +312,9 @@ func (h *TokenHandler) BindAgentToToken(w http.ResponseWriter, r *http.Request) 
 // @Failure      403      {string}  string  "forbidden"
 // @Failure      404      {string}  string  "not found"
 // @Failure      500      {string}  string  "internal server error"
-// @Router        /users/{user_id}/tokens [get]
+// @Router        /api/v1/users/{userId}/tokens [get]
 func (h *TokenHandler) GetTokensByUser(w http.ResponseWriter, r *http.Request) {
-	userId := r.PathValue("user_id")
+	userId := r.PathValue("userId")
 	if userId == "" {
 		http.Error(w, "user id is required", http.StatusBadRequest)
 		return

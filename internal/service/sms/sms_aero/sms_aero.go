@@ -52,7 +52,7 @@ func (s *AeroService) SendSms(number int, text string) (model.SmsResponse, error
 		rawBytes = nil
 	}
 	response := model.SmsResponse{
-		ExternalId:   string(rune(sendResult.Id)),
+		ExternalId:   strconv.Itoa(sendResult.Id),
 		From:         sendResult.From,
 		Text:         sendResult.Text,
 		Status:       sendResult.Status,
