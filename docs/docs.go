@@ -791,11 +791,13 @@ const docTemplate = `{
                 "summary": "Bind agent (service) to token",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "User ID",
-                        "name": "user_id",
-                        "in": "path",
-                        "required": true
+                        "description": "Bind agent to token request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.BindTokenRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -1172,13 +1174,11 @@ const docTemplate = `{
                 "summary": "Get tokens by user",
                 "parameters": [
                     {
-                        "description": "Bind agent to token request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.BindTokenRequest"
-                        }
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {

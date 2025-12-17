@@ -81,9 +81,11 @@ func (r *Storage) GetTokenByID(ctx context.Context, id string) (*model.UserToken
 
 func (r *Storage) GetTokensByUserId(ctx context.Context, userId string) ([]model.UserToken, error) {
 	var token []model.UserToken
-	if err := r.db.WithContext(ctx).Find("user_id = ?", userId).Error; err != nil {
+	fmt.Println(userId)
+	if err := r.db.WithContext(ctx).Find(&token, "user_id = ?", userId).Error; err != nil {
 		return nil, err
 	}
+	fmt.Println(token)
 	return token, nil
 }
 

@@ -253,6 +253,7 @@ func (s *service) BingAgentToTokenByName(ctx context.Context, userID string, req
 
 func (s *service) GetTokensByUser(ctx context.Context, userID string) ([]model.UserToken, error) {
 	tokens, err := s.repo.GetTokensByUserId(ctx, userID)
+	fmt.Println(tokens)
 	if err != nil {
 		return nil, err
 	}
