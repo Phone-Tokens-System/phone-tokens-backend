@@ -271,7 +271,7 @@ func isValidationError(err error) bool {
 // @Summary      Bind agent (service) to token
 // @Description  Привязывает агента (внешний сервис) к пользовательскому токену по имени токена и ид агента
 // @Security BearerAuth
-// @Tags         tokens
+// @Tags         Token
 // @Accept       json
 // @Produce      json
 // @Param        user_id path string true "User ID"
@@ -317,7 +317,7 @@ func (h *TokenHandler) BindAgentToToken(w http.ResponseWriter, r *http.Request) 
 // @Summary      Get tokens by user
 // @Description  Получение токенов пользователя
 // @Security BearerAuth
-// @Tags         tokens
+// @Tags         Token
 // @Accept       json
 // @Produce      json
 // @Param        request  body      dto.BindTokenRequest  true  "Bind agent to token request"

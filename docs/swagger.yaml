@@ -48,19 +48,6 @@ definitions:
       token:
         type: string
     type: object
-  http.registerRequest:
-    properties:
-      email:
-        type: string
-      password:
-        type: string
-      phone:
-        type: string
-      role:
-        $ref: '#/definitions/model.Role'
-      service_name:
-        type: string
-    type: object
   http.registerResponse:
     properties:
       id:
@@ -188,6 +175,19 @@ definitions:
     x-enum-varnames:
     - TokenStatusActive
     - TokenStatusFrozen
+  users.RegisterRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+      phone:
+        type: string
+      role:
+        $ref: '#/definitions/model.Role'
+      service_name:
+        type: string
+    type: object
 info:
   contact: {}
 paths:
@@ -409,7 +409,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/http.registerRequest'
+          $ref: '#/definitions/users.RegisterRequest'
       produces:
       - application/json
       responses:
@@ -924,7 +924,7 @@ paths:
       - BearerAuth: []
       summary: Bind agent (service) to token
       tags:
-      - tokens
+      - Token
   /api/v1/users/{userId}/tokens:
     get:
       consumes:
@@ -970,7 +970,7 @@ paths:
       - BearerAuth: []
       summary: Get tokens by user
       tags:
-      - tokens
+      - Token
 securityDefinitions:
   BearerAuth:
     description: Type "Bearer " followed by your JWT token

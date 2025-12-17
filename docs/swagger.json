@@ -344,7 +344,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/http.registerRequest"
+                            "$ref": "#/definitions/users.RegisterRequest"
                         }
                     }
                 ],
@@ -775,7 +775,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "tokens"
+                    "Token"
                 ],
                 "summary": "Bind agent (service) to token",
                 "parameters": [
@@ -1156,7 +1156,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "tokens"
+                    "Token"
                 ],
                 "summary": "Get tokens by user",
                 "parameters": [
@@ -1288,26 +1288,6 @@
             "type": "object",
             "properties": {
                 "token": {
-                    "type": "string"
-                }
-            }
-        },
-        "http.registerRequest": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                },
-                "role": {
-                    "$ref": "#/definitions/model.Role"
-                },
-                "service_name": {
                     "type": "string"
                 }
             }
@@ -1501,6 +1481,26 @@
                 "TokenStatusActive",
                 "TokenStatusFrozen"
             ]
+        },
+        "users.RegisterRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "role": {
+                    "$ref": "#/definitions/model.Role"
+                },
+                "service_name": {
+                    "type": "string"
+                }
+            }
         }
     },
     "securityDefinitions": {
