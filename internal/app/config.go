@@ -15,7 +15,7 @@ type Config struct {
 	DatabaseURL     string
 	APIKey          string
 	APIEmail        string
-	BillingConfig
+	BillingConfig   BillingConfig
 }
 
 func LoadConfig() (Config, error) {
@@ -36,6 +36,7 @@ func LoadConfig() (Config, error) {
 		DatabaseURL:     os.Getenv("DATABASE_URL"),
 		APIKey:          os.Getenv("API_KEY"),
 		APIEmail:        os.Getenv("EMAIL"),
+		BillingConfig:   billingConfig,
 	}, nil
 }
 
