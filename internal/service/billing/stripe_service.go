@@ -10,8 +10,7 @@ import (
 var stripeWebhookSecret = "whsec_..." // твой webhook секрет
 
 func (s *BillingService) CreateCheckoutSession(amount float64, agentID string) (string, error) {
-	stripe.Key = "sk_test_..." // твой тестовый ключ Stripe
-
+	stripe.Key = s.token
 	params := &stripe.CheckoutSessionParams{
 		PaymentMethodTypes: stripe.StringSlice([]string{"card"}),
 		Mode:               stripe.String(string(stripe.CheckoutSessionModePayment)),

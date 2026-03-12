@@ -14,13 +14,17 @@ type BillingService struct {
 	userRepo        users.Repository
 	usageRepo       *repository.UsageRepository
 	transactionRepo *repository.TransactionRepository
+	token           string
+	secret          string
 }
 
-func NewBillingService(u users.Repository, us *repository.UsageRepository, t *repository.TransactionRepository) *BillingService {
+func NewBillingService(u users.Repository, us *repository.UsageRepository, t *repository.TransactionRepository, token, secret string) *BillingService {
 	return &BillingService{
 		userRepo:        u,
 		usageRepo:       us,
 		transactionRepo: t,
+		token:           token,
+		secret:          secret,
 	}
 }
 
