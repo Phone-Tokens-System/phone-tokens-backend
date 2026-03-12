@@ -12,7 +12,7 @@ import (
 )
 
 func (s *CertificateService) GetSignedCertificateByCsrID(ctx context.Context, CsrID int) ([]byte, error) {
-	cert, err := s.Storage.GetAgentInfo(ctx, CsrID)
+	cert, err := s.Storage.GetCertificateInfo(ctx, CsrID)
 	if err != nil {
 		return nil, err
 	}

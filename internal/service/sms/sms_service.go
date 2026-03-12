@@ -3,7 +3,6 @@ package sms
 import (
 	"context"
 	"fmt"
-	"phone-tokens/internal/adapter/out/repository"
 	"phone-tokens/internal/model"
 	"phone-tokens/internal/service/certificates"
 	"phone-tokens/internal/service/tokens"
@@ -18,10 +17,10 @@ type SmsService struct {
 	CertificateService certificates.CertificateService
 	SmsAdapter         SmsAdapter
 	TokenService       tokens.Service
-	Storage            *repository.Storage `json:"storage"`
+	Storage            Repository `json:"storage"`
 }
 
-func NewSmsService(cs certificates.CertificateService, adapter SmsAdapter, tokens tokens.Service, storage *repository.Storage) *SmsService {
+func NewSmsService(cs certificates.CertificateService, adapter SmsAdapter, tokens tokens.Service, storage Repository) *SmsService {
 	return &SmsService{cs, adapter, tokens, storage}
 }
 

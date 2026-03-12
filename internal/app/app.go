@@ -49,23 +49,26 @@ func BuildService(cfg Config) (*Services, error) {
 		return nil, err
 	}
 
-	repo := repository.NewStorage(db)
+	userRepo := repository.NewUserRepository(db)
+	tokenRepo := repository.NewTokenRepository(db)
+	smsRepo := repository.NewSmsRepository(db)
+	certificateRepo := repository.NewCertificateRepository(db)
 
-	userSvc := users.NewService(repo, users.Config{
+	userSvc := users.NewService(userRepo, users.Config{
 		JWTSecret:       cfg.JWTSecret,
 		JWTExpiresInSec: cfg.JWTExpiresInSec,
 	})
 
-	tokenSvc := tokens.NewService(repo)
+	tokenSvc := tokens.NewService(tokenRepo)
 
-	certSvc, err := certificates.NewCertificateService(repo)
+	certSvc, err := certificates.NewCertificateService(certificateRepo)
 	if err != nil {
 		return nil, err
 	}
 
 	smsAdapter := sms_aero.NewAeroService(cfg.APIEmail, cfg.APIKey) // интерфейсную развязку сюда потом
 
-	smsSvc := sms.NewSmsService(*certSvc, smsAdapter, tokenSvc, repo)
+	smsSvc := sms.NewSmsService(*certSvc, smsAdapter, tokenSvc, smsRepo)
 
 	services := Services{
 		User:  userSvc,

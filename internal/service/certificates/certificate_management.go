@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"math/big"
 	"os"
-	"phone-tokens/internal/adapter/out/repository"
 	"phone-tokens/internal/model"
 	"time"
 
@@ -20,12 +19,12 @@ import (
 )
 
 type CertificateService struct {
-	CAKeyPem         []byte              `json:"ca_key"`
-	CACertificatePem []byte              `json:"ca_certificate"`
-	Storage          *repository.Storage `json:"storage"`
+	CAKeyPem         []byte     `json:"ca_key"`
+	CACertificatePem []byte     `json:"ca_certificate"`
+	Storage          Repository `json:"storage"`
 }
 
-func NewCertificateService(storage *repository.Storage) (*CertificateService, error) {
+func NewCertificateService(storage Repository) (*CertificateService, error) {
 	certFile, err := os.ReadFile("cert.pem")
 	if err != nil {
 		fmt.Println(err)
@@ -177,14 +176,14 @@ func (s *CertificateService) signCertificateForAgent(ctx context.Context, block 
 		Bytes: cert,
 	})
 
-	agentInfo := model.ExternalAgentInfo{
+	agentInfo := model.CertificateInfo{
 		OrganizationID: CSR.Subject.Organization[0],
 		CertificatePem: certPem.Bytes(),
 		IsActive:       true,
 		CsrID:          csrID,
 		ID:             uid,
 	}
-	err = s.Storage.SaveAgentInfo(ctx, agentInfo)
+	err = s.Storage.SaveCertificateInfo(ctx, agentInfo)
 	if err != nil {
 		return nil, err
 	}

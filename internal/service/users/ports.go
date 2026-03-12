@@ -11,6 +11,7 @@ type Repository interface {
 	GetUserByPhone(ctx context.Context, phone string) (*model.User, error)
 	GetUserByID(ctx context.Context, id string) (*model.User, error)
 	SaveAgent(ctx context.Context, agent *model.Agent) error
+	GetNumberFromUserId(ctx context.Context, userId string) (string, error)
 }
 
 type RegisterRequest struct {

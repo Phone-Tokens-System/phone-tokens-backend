@@ -47,7 +47,7 @@ func RegisterRoutes(mux *http.ServeMux, h Handlers, authCfg AuthConfig) {
 
 	//sms
 	mux.Handle("GET /api/v1/sms/logs", authMiddleware(RequireRole("admin", http.HandlerFunc(h.Sms.getSmsList))))
-	mux.Handle("POST /api/v1/sms/send", authMiddleware(RequireRole("admin", http.HandlerFunc(h.Sms.sendSMS))))
+	mux.Handle("POST /api/v1/sms/send", authMiddleware(RequireRole("user", http.HandlerFunc(h.Sms.sendSMS))))
 	mux.Handle("GET /api/v1/sms/status", authMiddleware(RequireRole("admin", http.HandlerFunc(h.Sms.checkStatus))))
 	mux.Handle("GET /api/v1/sms/all", authMiddleware(RequireRole("admin", http.HandlerFunc(h.Sms.getSmsListFromProvider))))
 
