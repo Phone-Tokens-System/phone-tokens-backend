@@ -25,6 +25,13 @@ definitions:
       id:
         type: integer
     type: object
+  dto.TopUpRequest:
+    properties:
+      agent_id:
+        type: string
+      amount:
+        type: number
+    type: object
   http.createTokenRequest:
     properties:
       agent_id:
@@ -218,42 +225,6 @@ paths:
       summary: List all pending CSR requests
       tags:
       - CSR
-  /api/v1/admin/csr/approve/{id}:
-    post:
-      consumes:
-      - application/json
-      description: Approves a CSR request by its ID and signs the certificate
-      parameters:
-      - description: CSR Request ID
-        in: query
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Signed certificate
-          schema:
-            $ref: '#/definitions/model.CsrRequest'
-        "400":
-          description: Invalid ID
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Approve a CSR request
-      tags:
-      - CSR
-  /api/v1/csr:
     post:
       consumes:
       - application/json
@@ -289,6 +260,132 @@ paths:
       summary: Accept a new CSR request
       tags:
       - CSR
+  /api/v1/admin/csr/approve/{id}:
+    post:
+      consumes:
+      - application/json
+      description: Approves a CSR request by its ID and signs the certificate
+      parameters:
+      - description: CSR Request ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Signed certificate
+          schema:
+            $ref: '#/definitions/model.CsrRequest'
+        "400":
+          description: Invalid ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Approve a CSR request
+      tags:
+      - CSR
+  /api/v1/billing/balance:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает float64 баланс агента по его ID
+      parameters:
+      - description: ID агента
+        in: query
+        name: agent_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Баланс агента
+          schema:
+            additionalProperties:
+              format: float64
+              type: number
+            type: object
+        "404":
+          description: Агент не найден
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Получить текущий баланс агента
+      tags:
+      - Billing
+    post:
+      consumes:
+      - application/json
+      description: Создает checkout-сессию на Stripe и возвращает URL для редиректа
+      parameters:
+      - description: Request payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.TopUpRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: URL для редиректа на Stripe Checkout
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Некорректный запрос
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Создать Stripe Checkout session для пополнения баланса
+      tags:
+      - Billing
+  /api/v1/billing/webhook:
+    post:
+      consumes:
+      - application/json
+      description: Получает уведомления о событиях Stripe, например успешной оплате
+        checkout session
+      parameters:
+      - description: Stripe Signature
+        in: header
+        name: stripe-signature
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Webhook обработан успешно
+        "400":
+          description: Некорректный payload или подпись
+      summary: Обработка Stripe Webhook
+      tags:
+      - Billing
   /api/v1/csr/signed:
     get:
       consumes:

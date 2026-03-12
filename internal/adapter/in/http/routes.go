@@ -58,5 +58,5 @@ func RegisterRoutes(mux *http.ServeMux, h Handlers, authCfg AuthConfig) {
 	// billing
 	mux.Handle("POST /api/v1/billing/balance", authMiddleware(RequireRole("agent", http.HandlerFunc(h.Billing.TopBalance))))
 	mux.HandleFunc("POST /api/v1/billing/webhook", h.Billing.StripeWebhookHandler)
-	mux.HandleFunc("GET /api/v1/billing/balance", h.Billing.GetBalanceHandler)
+	mux.Handle("GET /api/v1/billing/balance", authMiddleware(http.HandlerFunc(h.Billing.GetBalanceHandler)))
 }

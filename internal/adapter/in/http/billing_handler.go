@@ -28,10 +28,11 @@ func NewBillingHandler(billingService *billing.BillingService) *BillingHandler {
 // TopBalance godoc
 // @Summary Создать Stripe Checkout session для пополнения баланса
 // @Description Создает checkout-сессию на Stripe и возвращает URL для редиректа
+// @Security BearerAuth
 // @Tags Billing
 // @Accept json
 // @Produce json
-// @Param request body struct{AgentID string "json:\"agent_id\""; Amount float64 "json:\"amount\""} true "Request payload"
+// @Param request body dto.TopUpRequest true "Request payload"
 // @Success 200 {object} map[string]string "URL для редиректа на Stripe Checkout"
 // @Failure 400 {object} map[string]string "Некорректный запрос"
 // @Failure 500 {object} map[string]string "Ошибка сервера"
@@ -102,6 +103,7 @@ func (h *BillingHandler) StripeWebhookHandler(w http.ResponseWriter, r *http.Req
 // GetBalanceHandler godoc
 // @Summary Получить текущий баланс агента
 // @Description Возвращает float64 баланс агента по его ID
+// @Security BearerAuth
 // @Tags Billing
 // @Accept json
 // @Produce json

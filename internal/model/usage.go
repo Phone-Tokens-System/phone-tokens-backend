@@ -4,13 +4,13 @@ import "time"
 
 // Usage запись истории операций смс/звонков
 type Usage struct {
-	ID          int         `json:"id"`
-	AgentID     string      `json:"agent_id"`
-	PhoneNumber string      `json:"phone_number"`
-	Service     ServiceType `json:"service_type"`
-	Units       int         `json:"units"`
-	Cost        float64     `json:"cost"`
-	CreatedAt   time.Time   `json:"created_at"`
+	ID          int         `gorm:"id" json:"id"`
+	AgentID     string      `gorm:"agent_id" json:"agent_id"`
+	PhoneNumber string      `gorm:"phone_number" json:"phone_number"`
+	Service     ServiceType `gorm:"service_type" json:"service_type"`
+	Units       int         `gorm:"units" json:"units"`
+	Cost        float64     `gorm:"cost" json:"cost"`
+	CreatedAt   time.Time   `gorm:"created_at" json:"created_at"`
 }
 
 type ServiceType string
@@ -19,3 +19,7 @@ const (
 	SMS  ServiceType = "SMS"
 	Call ServiceType = "Call"
 )
+
+func (Usage) TableName() string {
+	return "usage"
+}

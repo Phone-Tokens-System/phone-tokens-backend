@@ -53,6 +53,61 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Accepts a Certificate Signing Request from an agent",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CSR"
+                ],
+                "summary": "Accept a new CSR request",
+                "parameters": [
+                    {
+                        "description": "CSR Request payload",
+                        "name": "csr",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CSRRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Signed certificate",
+                        "schema": {
+                            "$ref": "#/definitions/dto.CertificateResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
             }
         },
         "/api/v1/admin/csr/approve/{id}": {
@@ -110,14 +165,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/csr": {
-            "post": {
+        "/api/v1/billing/balance": {
+            "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Accepts a Certificate Signing Request from an agent",
+                "description": "Возвращает float64 баланс агента по его ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -125,29 +180,80 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "CSR"
+                    "Billing"
                 ],
-                "summary": "Accept a new CSR request",
+                "summary": "Получить текущий баланс агента",
                 "parameters": [
                     {
-                        "description": "CSR Request payload",
-                        "name": "csr",
+                        "type": "string",
+                        "description": "ID агента",
+                        "name": "agent_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Баланс агента",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "number",
+                                "format": "float64"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Агент не найден",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Создает checkout-сессию на Stripe и возвращает URL для редиректа",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Billing"
+                ],
+                "summary": "Создать Stripe Checkout session для пополнения баланса",
+                "parameters": [
+                    {
+                        "description": "Request payload",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.CSRRequest"
+                            "$ref": "#/definitions/dto.TopUpRequest"
                         }
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Signed certificate",
+                    "200": {
+                        "description": "URL для редиректа на Stripe Checkout",
                         "schema": {
-                            "$ref": "#/definitions/dto.CertificateResponse"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "400": {
-                        "description": "Invalid request",
+                        "description": "Некорректный запрос",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -156,13 +262,45 @@ const docTemplate = `{
                         }
                     },
                     "500": {
-                        "description": "Internal server error",
+                        "description": "Ошибка сервера",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
                                 "type": "string"
                             }
                         }
+                    }
+                }
+            }
+        },
+        "/api/v1/billing/webhook": {
+            "post": {
+                "description": "Получает уведомления о событиях Stripe, например успешной оплате checkout session",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Billing"
+                ],
+                "summary": "Обработка Stripe Webhook",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Stripe Signature",
+                        "name": "stripe-signature",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Webhook обработан успешно"
+                    },
+                    "400": {
+                        "description": "Некорректный payload или подпись"
                     }
                 }
             }
@@ -1274,6 +1412,17 @@ const docTemplate = `{
             "properties": {
                 "id": {
                     "type": "integer"
+                }
+            }
+        },
+        "dto.TopUpRequest": {
+            "type": "object",
+            "properties": {
+                "agent_id": {
+                    "type": "string"
+                },
+                "amount": {
+                    "type": "number"
                 }
             }
         },
