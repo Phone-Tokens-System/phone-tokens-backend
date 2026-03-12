@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"phone-tokens/internal/model"
+
+	"gorm.io/gorm"
 )
 
 type Repository interface {
@@ -11,7 +13,11 @@ type Repository interface {
 	GetUserByPhone(ctx context.Context, phone string) (*model.User, error)
 	GetUserByID(ctx context.Context, id string) (*model.User, error)
 	SaveAgent(ctx context.Context, agent *model.Agent) error
+	GetAgentByID(ctx context.Context, id string) (*model.Agent, error)
 	GetNumberFromUserId(ctx context.Context, userId string) (string, error)
+	WithTransaction(ctx context.Context, fn func(tx *gorm.DB) error) error
+	UpdateAgent(ctx context.Context, tx *gorm.DB, agent *model.Agent) (*model.Agent, error)
+	GetAgentForUpdate(ctx context.Context, tx *gorm.DB, id string) (*model.Agent, error)
 }
 
 type RegisterRequest struct {

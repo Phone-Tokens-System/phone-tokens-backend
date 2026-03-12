@@ -15,12 +15,18 @@ type Config struct {
 	DatabaseURL     string
 	APIKey          string
 	APIEmail        string
+	BillingConfig
 }
 
 func LoadConfig() (Config, error) {
 	err := godotenv.Load()
 	if err != nil {
 		return Config{}, fmt.Errorf("error loading .env file %w", err)
+	}
+	billingConfig := BillingConfig{
+		StripeKey:     os.Getenv("STRIPE_KEY"),
+		WebhookSecret: os.Getenv("WEBHOOK_SECRET"),
+		ServerURL:     os.Getenv("SERVER_URL"),
 	}
 
 	return Config{
@@ -45,4 +51,10 @@ func getenvInt64(key string) int64 {
 	}
 
 	return n
+}
+
+type BillingConfig struct {
+	ServerURL     string // базовый URL, например http://localhost:8080
+	StripeKey     string // секретный ключ Stripe
+	WebhookSecret string // секрет для webhook
 }

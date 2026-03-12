@@ -3,6 +3,7 @@ package app
 import (
 	"errors"
 	"log"
+	"phone-tokens/internal/service/billing"
 	"phone-tokens/internal/service/certificates"
 	"phone-tokens/internal/service/sms"
 	"phone-tokens/internal/service/sms/sms_aero"
@@ -16,10 +17,11 @@ import (
 )
 
 type Services struct {
-	User  users.Service
-	Token tokens.Service
-	SMS   *sms.SmsService
-	Cert  *certificates.CertificateService
+	User    users.Service
+	Token   tokens.Service
+	SMS     *sms.SmsService
+	Cert    *certificates.CertificateService
+	Billing *billing.BillingService
 }
 
 func BuildService(cfg Config) (*Services, error) {
@@ -53,6 +55,8 @@ func BuildService(cfg Config) (*Services, error) {
 	tokenRepo := repository.NewTokenRepository(db)
 	smsRepo := repository.NewSmsRepository(db)
 	certificateRepo := repository.NewCertificateRepository(db)
+	usageRepo := repository.NewUsageRepository(db)
+	transactionRepo := repository.NewTransactionRepository(db)
 
 	userSvc := users.NewService(userRepo, users.Config{
 		JWTSecret:       cfg.JWTSecret,
@@ -70,11 +74,14 @@ func BuildService(cfg Config) (*Services, error) {
 
 	smsSvc := sms.NewSmsService(*certSvc, smsAdapter, tokenSvc, smsRepo)
 
+	billingService := billing.NewBillingService(userRepo, usageRepo, transactionRepo)
+
 	services := Services{
-		User:  userSvc,
-		Token: tokenSvc,
-		SMS:   smsSvc,
-		Cert:  certSvc,
+		User:    userSvc,
+		Token:   tokenSvc,
+		SMS:     smsSvc,
+		Cert:    certSvc,
+		Billing: billingService,
 	}
 	return &services, nil
 }

@@ -39,12 +39,13 @@ func RegisterRoutes(mux *http.ServeMux, h Handlers, authCfg AuthConfig) {
 	mux.Handle("GET /api/v1/users/{userId}/tokens", authMiddleware(http.HandlerFunc(h.Token.GetTokensByUser)))
 	mux.Handle("POST /api/v1/tokens/bind-agent", authMiddleware(http.HandlerFunc(h.Token.BindAgentToToken)))
 	// certificates
-	mux.HandleFunc("POST /api/v1/csr", h.Agent.AcceptCSRRequest)
 	mux.HandleFunc("GET /api/v1/csr/signed", h.Agent.GetSignedCertificate)
-	mux.Handle("GET /api/v1/admin/csr", authMiddleware(RequireRole("admin", http.HandlerFunc(h.Agent.ShowCSRRequests))))
-	mux.Handle("POST /api/v1/admin/csr/approve/{id}", authMiddleware(RequireRole("admin", http.HandlerFunc(h.Agent.ApproveCSRRequest))))
 	mux.HandleFunc("POST /api/v1/csr/upload", h.Agent.UploadCSR)
 
+	//admin
+	mux.Handle("POST /api/v1/admin/csr", authMiddleware(RequireRole("admin", http.HandlerFunc(h.Admin.AcceptCSRRequest))))
+	mux.Handle("GET /api/v1/admin/csr", authMiddleware(RequireRole("admin", http.HandlerFunc(h.Admin.ShowCSRRequests))))
+	mux.Handle("POST /api/v1/admin/csr/approve/{id}", authMiddleware(RequireRole("admin", http.HandlerFunc(h.Admin.ApproveCSRRequest))))
 	//sms
 	mux.Handle("GET /api/v1/sms/logs", authMiddleware(RequireRole("admin", http.HandlerFunc(h.Sms.getSmsList))))
 	mux.Handle("POST /api/v1/sms/send", authMiddleware(RequireRole("user", http.HandlerFunc(h.Sms.sendSMS))))
@@ -53,4 +54,9 @@ func RegisterRoutes(mux *http.ServeMux, h Handlers, authCfg AuthConfig) {
 
 	mux.Handle("GET /api/v1/sms/users/{token}", authMiddleware(http.HandlerFunc(h.Sms.getSmsListByToken)))
 	mux.Handle("GET /api/v1/sms/agents/{agentId}", authMiddleware(http.HandlerFunc(h.Sms.getSmsListByAgentId)))
+
+	// billing
+	mux.Handle("POST /api/v1/billing/balance", authMiddleware(RequireRole("agent", http.HandlerFunc(h.Billing.TopBalance))))
+	mux.HandleFunc("POST /api/v1/billing/webhook", h.Billing.StripeWebhookHandler)
+	mux.HandleFunc("GET /api/v1/billing/balance", h.Billing.GetBalanceHandler)
 }
