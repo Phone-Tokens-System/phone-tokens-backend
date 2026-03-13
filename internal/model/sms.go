@@ -31,7 +31,7 @@ type SmsResponse struct {
 	Id           string    `json:"id,omitempty" gorm:"column:id;not null; primaryKey;autoIncrement"`
 	ExternalId   string    `json:"external_id" gorm:"column:external_id;not null"`
 	From         string    `json:"from,omitempty" gorm:"column:from_number"`
-	Number       string    `json:"number" gorm:"not null"`
+	Token        string    `json:"token,omitempty" gorm:"column:token;not null"`
 	Text         string    `json:"text" gorm:"not null"`
 	Status       int       `json:"status" gorm:"not null"`
 	ExtendStatus string    `json:"extend_status,omitempty" gorm:"column:extended_status"`

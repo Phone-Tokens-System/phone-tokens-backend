@@ -12,7 +12,10 @@ func TestRegisterDefaultsToUser(t *testing.T) {
 	repo := newStubRepo()
 	svc := NewService(repo, Config{JWTSecret: "secret", JWTExpiresInSec: 3600})
 
-	user, err := svc.Register(context.Background(), "100", "password", "", "", "")
+	user, err := svc.Register(context.Background(), RegisterRequest{
+		Phone:    "100",
+		Password: "password",
+	})
 	if err != nil {
 		t.Fatalf("Register returned error: %v", err)
 	}
@@ -26,7 +29,13 @@ func TestRegisterAllowsAgent(t *testing.T) {
 	repo := newStubRepo()
 	svc := NewService(repo, Config{JWTSecret: "secret", JWTExpiresInSec: 3600})
 
-	user, err := svc.Register(context.Background(), "200", "password", model.RoleAgent, "svc", "agent@example.com")
+	user, err := svc.Register(context.Background(), RegisterRequest{
+		Phone:       "200",
+		Password:    "password",
+		Role:        model.RoleAgent,
+		ServiceName: "svc",
+		Email:       "agent@example.com",
+	})
 	if err != nil {
 		t.Fatalf("Register returned error: %v", err)
 	}
@@ -43,7 +52,11 @@ func TestRegisterRejectsAdmin(t *testing.T) {
 	repo := newStubRepo()
 	svc := NewService(repo, Config{JWTSecret: "secret", JWTExpiresInSec: 3600})
 
-	_, err := svc.Register(context.Background(), "300", "password", model.RoleAdmin, "", "")
+	_, err := svc.Register(context.Background(), RegisterRequest{
+		Phone:    "300",
+		Password: "password",
+		Role:     model.RoleAdmin,
+	})
 	if !errors.Is(err, ErrRoleNotAllowed) {
 		t.Fatalf("expected ErrRoleNotAllowed, got %v", err)
 	}
@@ -53,7 +66,11 @@ func TestRegisterAgentRequiresDetails(t *testing.T) {
 	repo := newStubRepo()
 	svc := NewService(repo, Config{JWTSecret: "secret", JWTExpiresInSec: 3600})
 
-	if _, err := svc.Register(context.Background(), "400", "password", model.RoleAgent, "", ""); !errors.Is(err, ErrAgentDetailsNeeded) {
+	if _, err := svc.Register(context.Background(), RegisterRequest{
+		Phone:    "400",
+		Password: "password",
+		Role:     model.RoleAgent,
+	}); !errors.Is(err, ErrAgentDetailsNeeded) {
 		t.Fatalf("expected ErrAgentDetailsNeeded, got %v", err)
 	}
 }

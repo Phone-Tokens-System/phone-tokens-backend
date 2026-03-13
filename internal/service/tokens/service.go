@@ -52,6 +52,10 @@ func (s *service) Issue(ctx context.Context, input IssueInput) (*model.UserToken
 	if err != nil {
 		return nil, err
 	}
+	uid, err := uuid.Parse(input.AgentId)
+	if err != nil {
+		return nil, err
+	}
 
 	now := time.Now().UTC()
 	token := &model.UserToken{
@@ -63,6 +67,7 @@ func (s *service) Issue(ctx context.Context, input IssueInput) (*model.UserToken
 		Status:      model.TokenStatusActive,
 		ExpiresAt:   now.Add(time.Duration(input.TTLSeconds) * time.Second),
 		CreatedAt:   now,
+		AgentId:     uid,
 	}
 
 	if err := s.repo.CreateToken(ctx, token); err != nil {
@@ -228,10 +233,16 @@ func (s *service) CheckTokenPermission(ctx context.Context, token string, agentI
 	return false, nil
 }
 
-func (s *service) BingAgentToTokenByName(ctx context.Context, request dto.BindTokenRequest) (*model.UserToken, error) {
+func (s *service) BingAgentToTokenByName(ctx context.Context, userID string, request dto.BindTokenRequest) (*model.UserToken, error) {
+	if userID == "" {
+		return nil, errors.New("userID is required")
+	}
 	tokenObj, err := s.repo.GetTokenByToken(ctx, request.TokenName)
 	if err != nil {
 		return nil, err
+	}
+	if tokenObj.UserID != userID {
+		return nil, ErrForbidden
 	}
 	uid, err := uuid.Parse(request.AgentId)
 	if err != nil {
@@ -247,6 +258,7 @@ func (s *service) BingAgentToTokenByName(ctx context.Context, request dto.BindTo
 
 func (s *service) GetTokensByUser(ctx context.Context, userID string) ([]model.UserToken, error) {
 	tokens, err := s.repo.GetTokensByUserId(ctx, userID)
+	fmt.Println(tokens)
 	if err != nil {
 		return nil, err
 	}

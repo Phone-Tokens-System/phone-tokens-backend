@@ -1,0 +1,6 @@
+-- +goose Up
+ALTER TABLE sms DROP COLUMN number;
+ALTER TABLE sms ADD COLUMN token TEXT;
+-- +goose Down
+ALTER TABLE sms ADD COLUMN number VARCHAR(255);
+ALTER TABLE sms DROP COLUMN token;

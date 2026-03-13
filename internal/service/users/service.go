@@ -37,17 +37,17 @@ func NewService(repo Repository, cfg Config) Service {
 	}
 }
 
-func (s *service) Register(ctx context.Context, phone, password string, role model.Role, serviceName, email string) (*model.User, error) {
-	role, err := sanitizeSelfAssignedRole(role)
+func (s *service) Register(ctx context.Context, req RegisterRequest) (*model.User, error) {
+	role, err := sanitizeSelfAssignedRole(req.Role)
 	if err != nil {
 		return nil, err
 	}
 
-	if role == model.RoleAgent && (strings.TrimSpace(serviceName) == "" || strings.TrimSpace(email) == "") {
+	if role == model.RoleAgent && (strings.TrimSpace(req.ServiceName) == "" || strings.TrimSpace(req.Email) == "") {
 		return nil, ErrAgentDetailsNeeded
 	}
 
-	existing, err := s.repo.GetUserByPhone(ctx, phone)
+	existing, err := s.repo.GetUserByPhone(ctx, req.Phone)
 	if err != nil && !errors.Is(err, ErrNotFound) {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func (s *service) Register(ctx context.Context, phone, password string, role mod
 		return nil, ErrPhoneAlreadyUsed
 	}
 
-	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +63,7 @@ func (s *service) Register(ctx context.Context, phone, password string, role mod
 	now := time.Now().UTC()
 	user := &model.User{
 		ID:           uuid.NewString(),
-		Phone:        phone,
+		Phone:        req.Phone,
 		PasswordHash: string(hashed),
 		Role:         role,
 		CreatedAt:    now,
@@ -78,8 +78,8 @@ func (s *service) Register(ctx context.Context, phone, password string, role mod
 		agent := &model.Agent{
 			ID:                 uuid.NewString(),
 			UserID:             user.ID,
-			ServiceName:        serviceName,
-			Email:              email,
+			ServiceName:        req.ServiceName,
+			Email:              req.Email,
 			Certificate:        []byte{},
 			CertificateRequest: []byte{},
 			Balance:            0,

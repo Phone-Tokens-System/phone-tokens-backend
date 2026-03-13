@@ -355,7 +355,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/http.registerRequest"
+                            "$ref": "#/definitions/users.RegisterRequest"
                         }
                     }
                 ],
@@ -396,8 +396,13 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/sms/agents/agentId": {
+        "/api/v1/sms/agents/{agentId}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Returns list of sms",
                 "consumes": [
                     "application/json"
@@ -451,6 +456,11 @@ const docTemplate = `{
         },
         "/api/v1/sms/all": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Returns list of sms",
                 "consumes": [
                     "application/json"
@@ -495,6 +505,11 @@ const docTemplate = `{
         },
         "/api/v1/sms/logs": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Returns the list of all sent SMS",
                 "consumes": [
                     "application/json"
@@ -530,6 +545,11 @@ const docTemplate = `{
         },
         "/api/v1/sms/send": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Sends an SMS to the specified phone number",
                 "consumes": [
                     "application/json"
@@ -582,6 +602,11 @@ const docTemplate = `{
         },
         "/api/v1/sms/status": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Returns the status of an SMS by ID",
                 "consumes": [
                     "application/json"
@@ -632,8 +657,13 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/sms/users/userId": {
+        "/api/v1/sms/users/{token}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Returns list of sms",
                 "consumes": [
                     "application/json"
@@ -644,12 +674,12 @@ const docTemplate = `{
                 "tags": [
                     "SMS"
                 ],
-                "summary": "get sms sent to user",
+                "summary": "get sms sent to given token",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "User ID",
-                        "name": "userId",
+                        "description": "user token",
+                        "name": "token",
                         "in": "path",
                         "required": true
                     }
@@ -746,6 +776,75 @@ const docTemplate = `{
                             "additionalProperties": {
                                 "type": "string"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tokens/bing-agent": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Привязывает агента (внешний сервис) к пользовательскому токену по имени токена и ид агента",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Token"
+                ],
+                "summary": "Bind agent (service) to token",
+                "parameters": [
+                    {
+                        "description": "Bind agent to token request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.BindTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.tokenResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid request body",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "unauthorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "forbidden",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "internal server error",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }
@@ -1065,70 +1164,13 @@ const docTemplate = `{
                 }
             }
         },
-        "/tokens/bind-agent": {
-            "post": {
-                "description": "Привязывает агента (внешний сервис) к пользовательскому токену по имени токена и ид агента",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "tokens"
-                ],
-                "summary": "Bind agent (service) to token",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "User ID",
-                        "name": "user_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/http.tokenResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "invalid request body",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "401": {
-                        "description": "unauthorized",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "403": {
-                        "description": "forbidden",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "404": {
-                        "description": "not found",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "500": {
-                        "description": "internal server error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/users/{user_id}/tokens": {
+        "/api/v1/users/{userId}/tokens": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Получение токенов пользователя",
                 "consumes": [
                     "application/json"
@@ -1137,18 +1179,16 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "tokens"
+                    "Token"
                 ],
                 "summary": "Get tokens by user",
                 "parameters": [
                     {
-                        "description": "Bind agent to token request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.BindTokenRequest"
-                        }
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -1240,6 +1280,9 @@ const docTemplate = `{
         "http.createTokenRequest": {
             "type": "object",
             "properties": {
+                "agent_id": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -1269,26 +1312,6 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "token": {
-                    "type": "string"
-                }
-            }
-        },
-        "http.registerRequest": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                },
-                "role": {
-                    "$ref": "#/definitions/model.Role"
-                },
-                "service_name": {
                     "type": "string"
                 }
             }
@@ -1421,9 +1444,6 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
-                "number": {
-                    "type": "string"
-                },
                 "raw": {
                     "type": "array",
                     "items": {
@@ -1440,6 +1460,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "text": {
+                    "type": "string"
+                },
+                "token": {
                     "type": "string"
                 }
             }
@@ -1482,6 +1505,26 @@ const docTemplate = `{
                 "TokenStatusActive",
                 "TokenStatusFrozen"
             ]
+        },
+        "users.RegisterRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "role": {
+                    "$ref": "#/definitions/model.Role"
+                },
+                "service_name": {
+                    "type": "string"
+                }
+            }
         }
     },
     "securityDefinitions": {

@@ -60,6 +60,7 @@ func (s *SmsService) SendSms(ctx context.Context, sms model.SmsRequest) (*model.
 	}
 	sendSms.ServiceId = agentId
 	sendSms.ServiceName = sms.ServiceName
+	sendSms.Token = sms.ClientToken
 	err = s.Storage.SaveSms(ctx, sendSms)
 	if err != nil {
 		fmt.Println("Error saving sms ", err)
@@ -93,13 +94,9 @@ func (s *SmsService) GetSmsListByAgentId(ctx context.Context, agentId string) ([
 	return responses, nil
 }
 
-func (s *SmsService) GetSmsByUser(ctx context.Context, userId string) ([]model.SmsResponse, error) {
-	user, err := s.Storage.GetUserByID(ctx, userId)
-	if err != nil {
-		return nil, fmt.Errorf("user with id %s not found %w", userId, err)
-	}
-
-	responses, err := s.Storage.GetSmsByPhoneNumber(ctx, user.Phone)
+func (s *SmsService) GetSmsByToken(ctx context.Context, token string) ([]model.SmsResponse, error) {
+	responses, err := s.Storage.GetSmsByToken(ctx, token)
+	fmt.Println(responses)
 	if err != nil {
 		return nil, err
 	}

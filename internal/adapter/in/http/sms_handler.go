@@ -2,6 +2,7 @@ package http
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"phone-tokens/internal/adapter/dto"
 	"phone-tokens/internal/model"
@@ -20,6 +21,7 @@ func NewSmsHandler(smsService *sms.SmsService) *SmsHandler {
 // @Summary Send an SMS
 // @Description Sends an SMS to the specified phone number
 // @Tags SMS
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param request body model.SmsRequest true "SMS request payload"
@@ -52,6 +54,7 @@ func (h *SmsHandler) sendSMS(w http.ResponseWriter, req *http.Request) {
 // @Summary Check SMS status
 // @Description Returns the status of an SMS by ID
 // @Tags SMS
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param smsId body dto.SmsId true "SMS ID payload"
@@ -79,6 +82,7 @@ func (h *SmsHandler) checkStatus(w http.ResponseWriter, req *http.Request) {
 
 // GetSmsList godoc
 // @Summary Get all SMS
+// @Security BearerAuth
 // @Description Returns the list of all sent SMS
 // @Tags SMS
 // @Accept json
@@ -99,6 +103,7 @@ func (h *SmsHandler) getSmsList(w http.ResponseWriter, req *http.Request) {
 
 // getSmsListByAgentId godoc
 // @Summary get sms sent by agent by id
+// @Security BearerAuth
 // @Description Returns list of sms
 // @Tags SMS
 // @Accept json
@@ -107,7 +112,7 @@ func (h *SmsHandler) getSmsList(w http.ResponseWriter, req *http.Request) {
 // @Success 200 {array} model.SmsResponse "SMS status details"
 // @Failure 400 {object} map[string]string "Invalid request"
 // @Failure 500 {object} map[string]string "Internal server error"
-// @Router /api/v1/sms/agents/agentId [get]
+// @Router /api/v1/sms/agents/{agentId} [get]
 func (h *SmsHandler) getSmsListByAgentId(w http.ResponseWriter, req *http.Request) {
 	id := req.PathValue("agentId")
 	smsList, err := h.smsService.GetSmsListByAgentId(req.Context(), id)
@@ -120,20 +125,25 @@ func (h *SmsHandler) getSmsListByAgentId(w http.ResponseWriter, req *http.Reques
 	}
 }
 
-// getSmsListByUser godoc
-// @Summary get sms sent to user
+// getSmsListByToken godoc
+// @Summary get sms sent to given token
+// @Security BearerAuth
 // @Description Returns list of sms
 // @Tags SMS
 // @Accept json
 // @Produce json
-// @Param userId path string true "User ID"
+// @Param token path string true "user token"
 // @Success 200 {array} model.SmsResponse "SMS status details"
 // @Failure 400 {object} map[string]string "Invalid request"
 // @Failure 500 {object} map[string]string "Internal server error"
-// @Router /api/v1/sms/users/userId [get]
-func (h *SmsHandler) getSmsListByUser(w http.ResponseWriter, req *http.Request) {
-	userId := req.PathValue("userId")
-	smsList, err := h.smsService.GetSmsByUser(req.Context(), userId)
+// @Router /api/v1/sms/users/{token} [get]
+func (h *SmsHandler) getSmsListByToken(w http.ResponseWriter, req *http.Request) {
+	token := req.PathValue("token")
+	fmt.Println("token" + token)
+	fmt.Println("raw URL:", req.URL.Path)
+	fmt.Println("RequestURI:", req.RequestURI)
+
+	smsList, err := h.smsService.GetSmsByToken(req.Context(), token)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -145,6 +155,7 @@ func (h *SmsHandler) getSmsListByUser(w http.ResponseWriter, req *http.Request) 
 
 // getSmsListFromProvider godoc
 // @Summary get sms sent by provider
+// @Security BearerAuth
 // @Description Returns list of sms
 // @Tags SMS
 // @Accept json

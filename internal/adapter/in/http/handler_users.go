@@ -16,14 +16,6 @@ func NewUserHandler(service users.Service) *UserHandler {
 	return &UserHandler{service: service}
 }
 
-type registerRequest struct {
-	Phone       string     `json:"phone"`
-	Password    string     `json:"password"`
-	Role        model.Role `json:"role"`
-	ServiceName string     `json:"service_name"`
-	Email       string     `json:"email"`
-}
-
 type registerResponse struct {
 	ID    string     `json:"id"`
 	Phone string     `json:"phone"`
@@ -36,20 +28,20 @@ type registerResponse struct {
 // @Tags User
 // @Accept json
 // @Produce json
-// @Param request body registerRequest true "User registration payload"
+// @Param request body users.RegisterRequest true "User registration payload"
 // @Success 201 {object} registerResponse "User successfully registered"
 // @Failure 400 {object} map[string]string "Invalid request"
 // @Failure 409 {object} map[string]string "Phone already used"
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /api/v1/register [post]
 func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
-	var req registerRequest
+	var req users.RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	user, err := h.service.Register(r.Context(), req.Phone, req.Password, req.Role, req.ServiceName, req.Email)
+	user, err := h.service.Register(r.Context(), req)
 	if err != nil {
 		switch err {
 		case users.ErrPhoneAlreadyUsed:

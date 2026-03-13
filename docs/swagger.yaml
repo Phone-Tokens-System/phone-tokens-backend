@@ -27,6 +27,8 @@ definitions:
     type: object
   http.createTokenRequest:
     properties:
+      agent_id:
+        type: string
       name:
         type: string
       permissions:
@@ -46,19 +48,6 @@ definitions:
   http.loginResponse:
     properties:
       token:
-        type: string
-    type: object
-  http.registerRequest:
-    properties:
-      email:
-        type: string
-      password:
-        type: string
-      phone:
-        type: string
-      role:
-        $ref: '#/definitions/model.Role'
-      service_name:
         type: string
     type: object
   http.registerResponse:
@@ -146,8 +135,6 @@ definitions:
         type: string
       id:
         type: string
-      number:
-        type: string
       raw:
         items:
           type: integer
@@ -159,6 +146,8 @@ definitions:
       status:
         type: integer
       text:
+        type: string
+      token:
         type: string
     type: object
   model.SmsStatus:
@@ -188,6 +177,19 @@ definitions:
     x-enum-varnames:
     - TokenStatusActive
     - TokenStatusFrozen
+  users.RegisterRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+      phone:
+        type: string
+      role:
+        $ref: '#/definitions/model.Role'
+      service_name:
+        type: string
+    type: object
 info:
   contact: {}
 paths:
@@ -409,7 +411,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/http.registerRequest'
+          $ref: '#/definitions/users.RegisterRequest'
       produces:
       - application/json
       responses:
@@ -438,7 +440,7 @@ paths:
       summary: Register a new user
       tags:
       - User
-  /api/v1/sms/agents/agentId:
+  /api/v1/sms/agents/{agentId}:
     get:
       consumes:
       - application/json
@@ -470,6 +472,8 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - BearerAuth: []
       summary: get sms sent by agent by id
       tags:
       - SMS
@@ -499,6 +503,8 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - BearerAuth: []
       summary: get sms sent by provider
       tags:
       - SMS
@@ -522,6 +528,8 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - BearerAuth: []
       summary: Get all SMS
       tags:
       - SMS
@@ -556,6 +564,8 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - BearerAuth: []
       summary: Send an SMS
       tags:
       - SMS
@@ -590,18 +600,20 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - BearerAuth: []
       summary: Check SMS status
       tags:
       - SMS
-  /api/v1/sms/users/userId:
+  /api/v1/sms/users/{token}:
     get:
       consumes:
       - application/json
       description: Returns list of sms
       parameters:
-      - description: User ID
+      - description: user token
         in: path
-        name: userId
+        name: token
         required: true
         type: string
       produces:
@@ -625,7 +637,9 @@ paths:
             additionalProperties:
               type: string
             type: object
-      summary: get sms sent to user
+      security:
+      - BearerAuth: []
+      summary: get sms sent to given token
       tags:
       - SMS
   /api/v1/tokens:
@@ -873,18 +887,19 @@ paths:
       summary: Unfreeze a token
       tags:
       - Token
-  /tokens/bind-agent:
+  /api/v1/tokens/bing-agent:
     post:
       consumes:
       - application/json
       description: Привязывает агента (внешний сервис) к пользовательскому токену
         по имени токена и ид агента
       parameters:
-      - description: User ID
-        in: path
-        name: user_id
+      - description: Bind agent to token request
+        in: body
+        name: request
         required: true
-        type: string
+        schema:
+          $ref: '#/definitions/dto.BindTokenRequest'
       produces:
       - application/json
       responses:
@@ -912,21 +927,22 @@ paths:
           description: internal server error
           schema:
             type: string
+      security:
+      - BearerAuth: []
       summary: Bind agent (service) to token
       tags:
-      - tokens
-  /users/{user_id}/tokens:
+      - Token
+  /api/v1/users/{userId}/tokens:
     get:
       consumes:
       - application/json
       description: Получение токенов пользователя
       parameters:
-      - description: Bind agent to token request
-        in: body
-        name: request
+      - description: User ID
+        in: path
+        name: userId
         required: true
-        schema:
-          $ref: '#/definitions/dto.BindTokenRequest'
+        type: string
       produces:
       - application/json
       responses:
@@ -956,9 +972,11 @@ paths:
           description: internal server error
           schema:
             type: string
+      security:
+      - BearerAuth: []
       summary: Get tokens by user
       tags:
-      - tokens
+      - Token
 securityDefinitions:
   BearerAuth:
     description: Type "Bearer " followed by your JWT token

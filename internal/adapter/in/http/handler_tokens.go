@@ -3,6 +3,7 @@ package http
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"phone-tokens/internal/adapter/dto"
 	"time"
@@ -23,6 +24,7 @@ type createTokenRequest struct {
 	Name        string                  `json:"name"`
 	Permissions []model.TokenPermission `json:"permissions"`
 	TTLSeconds  int64                   `json:"ttl_seconds"`
+	AgentId     string                  `json:"agent_id"`
 }
 
 type tokenResponse struct {
@@ -64,14 +66,16 @@ func (h *TokenHandler) CreateToken(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
-
+	fmt.Println(req)
 	token, err := h.service.Issue(r.Context(), tokens.IssueInput{
 		UserID:      claims.UserID,
 		Name:        req.Name,
 		Permissions: req.Permissions,
 		TTLSeconds:  req.TTLSeconds,
+		AgentId:     req.AgentId,
 	})
 	if err != nil {
+		fmt.Println(err)
 		if isValidationError(err) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -270,29 +274,45 @@ func isValidationError(err error) bool {
 // BindAgentToToken godoc
 // @Summary      Bind agent (service) to token
 // @Description  Привязывает агента (внешний сервис) к пользовательскому токену по имени токена и ид агента
-// @Tags         tokens
+// @Security BearerAuth
+// @Tags         Token
 // @Accept       json
 // @Produce      json
-// @Param        user_id path string true "User ID"
+// @Param        request  body      dto.BindTokenRequest  true  "Bind agent to token request"
 // @Success      200      {object}  tokenResponse
 // @Failure      400      {string}  string  "invalid request body"
 // @Failure      401      {string}  string  "unauthorized"
 // @Failure      403      {string}  string  "forbidden"
 // @Failure      404      {string}  string  "not found"
 // @Failure      500      {string}  string  "internal server error"
-// @Router       /tokens/bind-agent [post]
+// @Router       /api/v1/tokens/bing-agent [post]
 func (h *TokenHandler) BindAgentToToken(w http.ResponseWriter, r *http.Request) {
 	var req dto.BindTokenRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
-	}
-	updatedToken, err := h.service.BingAgentToTokenByName(r.Context(), req)
-	if err != nil {
 		return
 	}
-	err = json.NewEncoder(w).Encode(toTokenResponse(updatedToken))
+
+	claims, ok := r.Context().Value(userContextKey).(*UserClaims)
+	if !ok || claims.UserID == "" {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	updatedToken, err := h.service.BingAgentToTokenByName(r.Context(), claims.UserID, req)
 	if err != nil {
+		switch err {
+		case tokens.ErrForbidden:
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case tokens.ErrNotFound:
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, "internal error", http.StatusInternalServerError)
+		}
+		return
+	}
+	if err := json.NewEncoder(w).Encode(toTokenResponse(updatedToken)); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -300,27 +320,40 @@ func (h *TokenHandler) BindAgentToToken(w http.ResponseWriter, r *http.Request) 
 // GetTokensByUser godoc
 // @Summary      Get tokens by user
 // @Description  Получение токенов пользователя
-// @Tags         tokens
+// @Security BearerAuth
+// @Tags         Token
 // @Accept       json
 // @Produce      json
-// @Param        request  body      dto.BindTokenRequest  true  "Bind agent to token request"
+// @Param        userId path string true "User ID"
 // @Success      200      {array}  tokenResponse
 // @Failure      400      {string}  string  "invalid request body"
 // @Failure      401      {string}  string  "unauthorized"
 // @Failure      403      {string}  string  "forbidden"
 // @Failure      404      {string}  string  "not found"
 // @Failure      500      {string}  string  "internal server error"
-// @Router        /users/{user_id}/tokens [get]
+// @Router        /api/v1/users/{userId}/tokens [get]
 func (h *TokenHandler) GetTokensByUser(w http.ResponseWriter, r *http.Request) {
-	userId := r.PathValue("user_id")
+	userId := r.PathValue("userId")
 	if userId == "" {
 		http.Error(w, "user id is required", http.StatusBadRequest)
 		return
 	}
+	fmt.Println(userId)
+	claims, ok := r.Context().Value(userContextKey).(*UserClaims)
+	if !ok || claims.UserID == "" {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	//if claims.UserID != userId {
+	//	http.Error(w, "forbidden", http.StatusForbidden)
+	//	return
+	//}
+
 	tokensByUser, err := h.service.GetTokensByUser(r.Context(), userId)
 	if err != nil {
 		return
 	}
+	fmt.Println(tokensByUser)
 	err = json.NewEncoder(w).Encode(tokensByUser)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

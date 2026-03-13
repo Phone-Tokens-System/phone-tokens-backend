@@ -26,6 +26,7 @@ type IssueInput struct {
 	Name        string
 	TTLSeconds  int64
 	Permissions []model.TokenPermission
+	AgentId     string
 }
 
 // Service defines token issuance use cases.
@@ -36,6 +37,6 @@ type Service interface {
 	Delete(ctx context.Context, userID, tokenID string) error
 	GetUserNumberFromToken(ctx context.Context, token string) (string, error)
 	CheckTokenPermission(ctx context.Context, token string, agentId uuid.UUID, perm model.TokenPermission) (bool, error)
-	BingAgentToTokenByName(ctx context.Context, request dto.BindTokenRequest) (*model.UserToken, error)
+	BingAgentToTokenByName(ctx context.Context, userID string, request dto.BindTokenRequest) (*model.UserToken, error)
 	GetTokensByUser(ctx context.Context, userID string) ([]model.UserToken, error)
 }
