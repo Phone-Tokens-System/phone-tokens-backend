@@ -534,6 +534,56 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/sms/agents/logs": {
+            "get": {
+                "description": "Returns all sms logs with given agent id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Agents"
+                ],
+                "summary": "Get sms logs for given agent",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "agent ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Signed certificate",
+                        "schema": {
+                            "$ref": "#/definitions/dto.SmsLog"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid agent ID",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/sms/agents/{agentId}": {
             "get": {
                 "security": [
@@ -1412,6 +1462,38 @@ const docTemplate = `{
             "properties": {
                 "id": {
                     "type": "integer"
+                }
+            }
+        },
+        "dto.SmsLog": {
+            "type": "object",
+            "properties": {
+                "cost": {
+                    "type": "number"
+                },
+                "date_created": {
+                    "type": "integer"
+                },
+                "date_sent": {
+                    "type": "integer"
+                },
+                "from": {
+                    "type": "string"
+                },
+                "service_id": {
+                    "type": "string"
+                },
+                "service_name": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "text": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
                 }
             }
         },

@@ -6,15 +6,17 @@ import (
 	"net/http"
 	"phone-tokens/internal/adapter/dto"
 	"phone-tokens/internal/service/certificates"
+	"phone-tokens/internal/service/sms"
 	"strconv"
 )
 
 type AgentHandler struct {
 	CertificateService *certificates.CertificateService
+	SmsService         *sms.SmsService
 }
 
-func NewAgentHandler(certService *certificates.CertificateService) *AgentHandler {
-	return &AgentHandler{certService}
+func NewAgentHandler(certService *certificates.CertificateService, smsService *sms.SmsService) *AgentHandler {
+	return &AgentHandler{certService, smsService}
 }
 
 // UploadCSR godoc
@@ -97,6 +99,35 @@ func (h *AgentHandler) GetSignedCertificate(w http.ResponseWriter, r *http.Reque
 		Certificate: string(cert),
 		CsrId:       idInt,
 	}
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(resp)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+// SeeSMSLogs godoc
+// @Summary Get sms logs for given agent
+// @Description Returns all sms logs with given agent id
+// @Tags Agents
+// @Accept json
+// @Produce json
+// @Param id query string true "agent ID"
+// @Success 200 {object} dto.SmsLog "Signed certificate"
+// @Failure 400 {object} map[string]string "Invalid agent ID"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /api/v1/sms/agents/logs [get]
+func (h *AgentHandler) SeeSMSLogs(w http.ResponseWriter, r *http.Request) {
+	id := r.FormValue("id")
+	smsResp, err := h.SmsService.GetSmsListByAgentId(r.Context(), id)
+	if err != nil {
+		return
+	}
+	resp := make([]dto.SmsLog, len(smsResp))
+	for _, sm := range smsResp {
+		resp = append(resp, *dto.ToSmsLog(sm))
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(resp)
 	if err != nil {

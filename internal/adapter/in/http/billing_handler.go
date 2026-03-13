@@ -16,6 +16,8 @@ type BillingHandler struct {
 	WebhookSecret  string
 }
 
+var stripeWebhookSecret = "whsec_..." // твой webhook секрет
+
 func NewBillingHandler(billingService *billing.BillingService) *BillingHandler {
 	return &BillingHandler{BillingService: billingService}
 }
@@ -79,7 +81,7 @@ func (h *BillingHandler) StripeWebhookHandler(w http.ResponseWriter, r *http.Req
 	payload, _ := io.ReadAll(r.Body)
 	sigHeader := r.Header.Get("Stripe-Signature")
 
-	event, err := webhook.ConstructEvent(payload, sigHeader, h.WebhookSecret)
+	event, err := webhook.ConstructEvent(payload, sigHeader, stripeWebhookSecret)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return

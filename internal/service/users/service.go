@@ -30,6 +30,10 @@ type service struct {
 	config Config
 }
 
+func (s *service) GetAgentByID(ctx context.Context, id string) (*model.Agent, error) {
+	return s.repo.GetAgentByID(ctx, id)
+}
+
 func NewService(repo Repository, cfg Config) Service {
 	return &service{
 		repo:   repo,

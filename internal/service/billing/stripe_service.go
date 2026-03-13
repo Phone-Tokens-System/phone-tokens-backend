@@ -7,8 +7,6 @@ import (
 	"github.com/stripe/stripe-go/v74/checkout/session"
 )
 
-var stripeWebhookSecret = "whsec_..." // твой webhook секрет
-
 func (s *BillingService) CreateCheckoutSession(amount float64, agentID string) (string, error) {
 	stripe.Key = s.token
 	params := &stripe.CheckoutSessionParams{

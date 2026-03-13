@@ -25,6 +25,27 @@ definitions:
       id:
         type: integer
     type: object
+  dto.SmsLog:
+    properties:
+      cost:
+        type: number
+      date_created:
+        type: integer
+      date_sent:
+        type: integer
+      from:
+        type: string
+      service_id:
+        type: string
+      service_name:
+        type: string
+      status:
+        type: string
+      text:
+        type: string
+      token:
+        type: string
+    type: object
   dto.TopUpRequest:
     properties:
       agent_id:
@@ -574,6 +595,39 @@ paths:
       summary: get sms sent by agent by id
       tags:
       - SMS
+  /api/v1/sms/agents/logs:
+    get:
+      consumes:
+      - application/json
+      description: Returns all sms logs with given agent id
+      parameters:
+      - description: agent ID
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Signed certificate
+          schema:
+            $ref: '#/definitions/dto.SmsLog'
+        "400":
+          description: Invalid agent ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get sms logs for given agent
+      tags:
+      - Agents
   /api/v1/sms/all:
     get:
       consumes:

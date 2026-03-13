@@ -32,4 +32,5 @@ type Service interface {
 	Register(ctx context.Context, req RegisterRequest) (*model.User, error)
 	Authenticate(ctx context.Context, phone, password string) (string, *model.User, error)
 	GetByID(ctx context.Context, id string) (*model.User, error)
+	GetAgentByID(ctx context.Context, id string) (*model.Agent, error)
 }

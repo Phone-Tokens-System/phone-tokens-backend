@@ -38,9 +38,10 @@ func RegisterRoutes(mux *http.ServeMux, h Handlers, authCfg AuthConfig) {
 	mux.Handle("PATCH /api/v1/tokens/{tokenID}/unfreeze", authMiddleware(http.HandlerFunc(h.Token.UnfreezeToken)))
 	mux.Handle("GET /api/v1/users/{userId}/tokens", authMiddleware(http.HandlerFunc(h.Token.GetTokensByUser)))
 	mux.Handle("POST /api/v1/tokens/bind-agent", authMiddleware(http.HandlerFunc(h.Token.BindAgentToToken)))
-	// certificates
+	// agents
 	mux.HandleFunc("GET /api/v1/csr/signed", h.Agent.GetSignedCertificate)
 	mux.HandleFunc("POST /api/v1/csr/upload", h.Agent.UploadCSR)
+	mux.Handle("GET /api/v1/sms/agents/logs", authMiddleware(RequireRole("agent", http.HandlerFunc(h.Agent.SeeSMSLogs))))
 
 	//admin
 	mux.Handle("POST /api/v1/admin/csr", authMiddleware(RequireRole("admin", http.HandlerFunc(h.Admin.AcceptCSRRequest))))
