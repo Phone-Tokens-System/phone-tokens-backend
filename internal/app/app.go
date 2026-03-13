@@ -3,9 +3,12 @@ package app
 import (
 	"errors"
 	"log"
+	"phone-tokens/internal/service/calls"
+	"phone-tokens/internal/service/calls/novofon"
 	"phone-tokens/internal/service/certificates"
 	"phone-tokens/internal/service/sms"
 	"phone-tokens/internal/service/sms/sms_aero"
+	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -18,6 +21,7 @@ import (
 type Services struct {
 	User  users.Service
 	Token tokens.Service
+	Call  calls.Service
 	SMS   *sms.SmsService
 	Cert  *certificates.CertificateService
 }
@@ -31,6 +35,12 @@ func BuildService(cfg Config) (*Services, error) {
 	}
 	if cfg.JWTExpiresInSec <= 0 {
 		return nil, errors.New("JWT_EXPIRES_IN_SEC must be greater than zero")
+	}
+	if cfg.NovofonAPIKey == "" {
+		return nil, errors.New("NOVOFON_API_KEY is required")
+	}
+	if cfg.NovofonSecret == "" {
+		return nil, errors.New("NOVOFON_API_SECRET is required")
 	}
 
 	log.Printf("initializing database connection")
@@ -63,6 +73,17 @@ func BuildService(cfg Config) (*Services, error) {
 		return nil, err
 	}
 
+	novofonClient, err := novofon.NewClient(novofon.Config{
+		APIKey:    cfg.NovofonAPIKey,
+		APISecret: cfg.NovofonSecret,
+		BaseURL:   cfg.NovofonBaseURL,
+		Timeout:   time.Duration(cfg.NovofonTimeout) * time.Second,
+	})
+	if err != nil {
+		return nil, err
+	}
+	callSvc := calls.NewService(novofonClient)
+
 	smsAdapter := sms_aero.NewAeroService(cfg.APIEmail, cfg.APIKey) // интерфейсную развязку сюда потом
 
 	smsSvc := sms.NewSmsService(*certSvc, smsAdapter, tokenSvc, repo)
@@ -70,6 +91,7 @@ func BuildService(cfg Config) (*Services, error) {
 	services := Services{
 		User:  userSvc,
 		Token: tokenSvc,
+		Call:  callSvc,
 		SMS:   smsSvc,
 		Cert:  certSvc,
 	}

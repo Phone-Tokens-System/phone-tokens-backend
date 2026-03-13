@@ -9,6 +9,7 @@ import (
 type Handlers struct {
 	User  *UserHandler
 	Token *TokenHandler
+	Call  *CallHandler
 	Sms   *SmsHandler
 	Agent *AgentHandler
 }
@@ -16,11 +17,13 @@ type Handlers struct {
 func BuildHandlers(services app.Services) *Handlers {
 	user := NewUserHandler(services.User)
 	token := NewTokenHandler(services.Token)
+	call := NewCallHandler(services.Call)
 	sms := NewSmsHandler(services.SMS)
 	agent := NewAgentHandler(services.Cert)
 	return &Handlers{
 		User:  user,
 		Token: token,
+		Call:  call,
 		Sms:   sms,
 		Agent: agent,
 	}
