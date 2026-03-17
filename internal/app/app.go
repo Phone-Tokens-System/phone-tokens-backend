@@ -3,6 +3,7 @@ package app
 import (
 	"errors"
 	"log"
+	"phone-tokens/internal/service/billing"
 	"phone-tokens/internal/service/certificates"
 	"phone-tokens/internal/service/sms"
 	"phone-tokens/internal/service/sms/sms_aero"
@@ -16,10 +17,11 @@ import (
 )
 
 type Services struct {
-	User  users.Service
-	Token tokens.Service
-	SMS   *sms.SmsService
-	Cert  *certificates.CertificateService
+	User    users.Service
+	Token   tokens.Service
+	SMS     *sms.SmsService
+	Cert    *certificates.CertificateService
+	Billing *billing.BillingService
 }
 
 func BuildService(cfg Config) (*Services, error) {
@@ -49,29 +51,38 @@ func BuildService(cfg Config) (*Services, error) {
 		return nil, err
 	}
 
-	repo := repository.NewStorage(db)
+	userRepo := repository.NewUserRepository(db)
+	tokenRepo := repository.NewTokenRepository(db)
+	smsRepo := repository.NewSmsRepository(db)
+	certificateRepo := repository.NewCertificateRepository(db)
+	usageRepo := repository.NewUsageRepository(db)
+	transactionRepo := repository.NewTransactionRepository(db)
 
-	userSvc := users.NewService(repo, users.Config{
+	userSvc := users.NewService(userRepo, users.Config{
 		JWTSecret:       cfg.JWTSecret,
 		JWTExpiresInSec: cfg.JWTExpiresInSec,
 	})
 
-	tokenSvc := tokens.NewService(repo)
+	tokenSvc := tokens.NewService(tokenRepo)
 
-	certSvc, err := certificates.NewCertificateService(repo)
+	certSvc, err := certificates.NewCertificateService(certificateRepo)
 	if err != nil {
 		return nil, err
 	}
 
 	smsAdapter := sms_aero.NewAeroService(cfg.APIEmail, cfg.APIKey) // интерфейсную развязку сюда потом
 
-	smsSvc := sms.NewSmsService(*certSvc, smsAdapter, tokenSvc, repo)
+	smsSvc := sms.NewSmsService(*certSvc, smsAdapter, tokenSvc, smsRepo)
+
+	billingService := billing.NewBillingService(userRepo, usageRepo, transactionRepo,
+		cfg.BillingConfig.StripeKey, cfg.BillingConfig.WebhookSecret)
 
 	services := Services{
-		User:  userSvc,
-		Token: tokenSvc,
-		SMS:   smsSvc,
-		Cert:  certSvc,
+		User:    userSvc,
+		Token:   tokenSvc,
+		SMS:     smsSvc,
+		Cert:    certSvc,
+		Billing: billingService,
 	}
 	return &services, nil
 }

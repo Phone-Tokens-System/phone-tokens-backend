@@ -2,6 +2,7 @@ package http
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"phone-tokens/internal/model"
@@ -38,9 +39,10 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req users.RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
+		fmt.Println(req)
 		return
 	}
-
+	fmt.Println(req)
 	user, err := h.service.Register(r.Context(), req)
 	if err != nil {
 		switch err {
@@ -90,9 +92,10 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req loginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
+		fmt.Println(req)
 		return
 	}
-
+	fmt.Println(req)
 	token, _, err := h.service.Authenticate(r.Context(), req.Phone, req.Password)
 	if err != nil {
 		switch err {

@@ -2,7 +2,7 @@ package model
 
 import "github.com/google/uuid"
 
-type ExternalAgentInfo struct {
+type CertificateInfo struct {
 	CsrID          int       `json:"csr_id"`
 	ID             uuid.UUID `json:"id" gorm:"primary_key;AUTO_INCREMENT"`
 	ServiceName    string    `json:"service_name"`
@@ -12,6 +12,6 @@ type ExternalAgentInfo struct {
 	IsActive       bool      `json:"is_active" gorm:"size:1;NOT NULL;"`
 }
 
-func (ExternalAgentInfo) TableName() string {
+func (CertificateInfo) TableName() string {
 	return "agent_info"
 }

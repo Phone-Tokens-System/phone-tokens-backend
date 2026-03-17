@@ -139,10 +139,7 @@ func (h *SmsHandler) getSmsListByAgentId(w http.ResponseWriter, req *http.Reques
 // @Router /api/v1/sms/users/{token} [get]
 func (h *SmsHandler) getSmsListByToken(w http.ResponseWriter, req *http.Request) {
 	token := req.PathValue("token")
-	fmt.Println("token" + token)
-	fmt.Println("raw URL:", req.URL.Path)
-	fmt.Println("RequestURI:", req.RequestURI)
-
+	fmt.Println(token)
 	smsList, err := h.smsService.GetSmsByToken(req.Context(), token)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
