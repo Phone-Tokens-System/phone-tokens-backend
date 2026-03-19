@@ -16,14 +16,7 @@ func RegisterRoutes(mux *http.ServeMux, h Handlers, authCfg AuthConfig) {
 
 	authMiddleware := AuthMiddleware(authCfg)
 
-	mux.Handle("/api/v1/me", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		claims, ok := r.Context().Value(userContextKey).(*UserClaims)
-		if !ok {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
-			return
-		}
-		writeJSON(w, http.StatusOK, claims)
-	})))
+	mux.Handle("/api/v1/me", authMiddleware(http.HandlerFunc(h.User.Me)))
 
 	mux.Handle("/api/v1/admin/ping", authMiddleware(RequireRole("admin", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -49,12 +42,12 @@ func RegisterRoutes(mux *http.ServeMux, h Handlers, authCfg AuthConfig) {
 	mux.Handle("POST /api/v1/admin/csr/approve/{id}", authMiddleware(RequireRole("admin", http.HandlerFunc(h.Admin.ApproveCSRRequest))))
 	//sms
 	mux.Handle("GET /api/v1/sms/logs", authMiddleware(RequireRole("admin", http.HandlerFunc(h.Sms.getSmsList))))
-	mux.Handle("POST /api/v1/sms/send", authMiddleware(RequireRole("user", http.HandlerFunc(h.Sms.sendSMS))))
+	mux.Handle("POST /api/v1/sms/send", authMiddleware(RequireRole("agent", http.HandlerFunc(h.Sms.sendSMS))))
 	mux.Handle("GET /api/v1/sms/status", authMiddleware(RequireRole("admin", http.HandlerFunc(h.Sms.checkStatus))))
 	mux.Handle("GET /api/v1/sms/all", authMiddleware(RequireRole("admin", http.HandlerFunc(h.Sms.getSmsListFromProvider))))
 
 	mux.Handle("GET /api/v1/sms/users/{token}", authMiddleware(http.HandlerFunc(h.Sms.getSmsListByToken)))
-	mux.Handle("GET /api/v1/sms/agents/{agentId}", authMiddleware(http.HandlerFunc(h.Sms.getSmsListByAgentId)))
+	mux.Handle("GET /api/v1/sms/agents/{agentId}", authMiddleware(RequireRole("agent", http.HandlerFunc(h.Sms.getSmsListByAgentId))))
 
 	// billing
 	mux.Handle("POST /api/v1/billing/balance", authMiddleware(RequireRole("agent", http.HandlerFunc(h.Billing.TopBalance))))

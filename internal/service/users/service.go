@@ -34,6 +34,10 @@ func (s *service) GetAgentByID(ctx context.Context, id string) (*model.Agent, er
 	return s.repo.GetAgentByID(ctx, id)
 }
 
+func (s *service) GetAgentByUserID(ctx context.Context, userID string) (*model.Agent, error) {
+	return s.repo.GetAgentByUserID(ctx, userID)
+}
+
 func NewService(repo Repository, cfg Config) Service {
 	return &service{
 		repo:   repo,

@@ -64,6 +64,20 @@ func (r *UserRepository) GetAgentByID(ctx context.Context, id string) (*model.Ag
 
 	return &agent, nil
 }
+
+func (r *UserRepository) GetAgentByUserID(ctx context.Context, userID string) (*model.Agent, error) {
+	var agent model.Agent
+
+	if err := r.db.WithContext(ctx).Where("user_id = ?", userID).First(&agent).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, users.ErrNotFound
+		}
+		return nil, err
+	}
+
+	return &agent, nil
+}
+
 func (r *UserRepository) GetNumberFromUserId(ctx context.Context, userId string) (string, error) {
 	var user model.User
 	if err := r.db.WithContext(ctx).Where("id = ?", userId).First(&user).Error; err != nil {

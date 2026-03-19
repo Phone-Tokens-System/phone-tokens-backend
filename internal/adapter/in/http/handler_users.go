@@ -2,6 +2,7 @@ package http
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -76,6 +77,13 @@ type loginResponse struct {
 	Token string `json:"token"`
 }
 
+type meResponse struct {
+	UserID  string     `json:"user_id"`
+	Phone   string     `json:"phone"`
+	Role    model.Role `json:"role"`
+	AgentID string     `json:"agent_id,omitempty"`
+}
+
 // Login godoc
 // @Summary Login a user
 // @Description Authenticates user with phone and password and returns a JWT token
@@ -108,4 +116,32 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, loginResponse{Token: token})
+}
+
+func (h *UserHandler) Me(w http.ResponseWriter, r *http.Request) {
+	claims, ok := r.Context().Value(userContextKey).(*UserClaims)
+	if !ok || claims.UserID == "" {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	resp := meResponse{
+		UserID: claims.UserID,
+		Phone:  claims.Phone,
+		Role:   claims.Role,
+	}
+
+	if claims.Role == model.RoleAgent {
+		agent, err := h.service.GetAgentByUserID(r.Context(), claims.UserID)
+		if err != nil {
+			if !errors.Is(err, users.ErrNotFound) {
+				http.Error(w, "internal error", http.StatusInternalServerError)
+				return
+			}
+		} else if agent != nil {
+			resp.AgentID = agent.ID
+		}
+	}
+
+	writeJSON(w, http.StatusOK, resp)
 }

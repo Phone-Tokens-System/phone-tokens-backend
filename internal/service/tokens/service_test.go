@@ -178,6 +178,7 @@ func TestServiceIssueDefaults(t *testing.T) {
 	token, err := svc.Issue(context.Background(), IssueInput{
 		UserID:     "user-issue",
 		TTLSeconds: ttl,
+		AgentId:    uuid.Nil.String(),
 	})
 	if err != nil {
 		t.Fatalf("Issue returned error: %v", err)
@@ -204,6 +205,7 @@ func TestServiceIssueCustomPermissions(t *testing.T) {
 		UserID:     "user-perms",
 		TTLSeconds: 60,
 		Name:       "calls-only",
+		AgentId:    uuid.Nil.String(),
 		Permissions: []model.TokenPermission{
 			model.TokenPermissionCalls,
 			model.TokenPermissionCalls,

@@ -14,6 +14,7 @@ type Repository interface {
 	GetUserByID(ctx context.Context, id string) (*model.User, error)
 	SaveAgent(ctx context.Context, agent *model.Agent) error
 	GetAgentByID(ctx context.Context, id string) (*model.Agent, error)
+	GetAgentByUserID(ctx context.Context, userID string) (*model.Agent, error)
 	GetNumberFromUserId(ctx context.Context, userId string) (string, error)
 	WithTransaction(ctx context.Context, fn func(tx *gorm.DB) error) error
 	UpdateAgent(ctx context.Context, tx *gorm.DB, agent *model.Agent) (*model.Agent, error)
@@ -33,4 +34,5 @@ type Service interface {
 	Authenticate(ctx context.Context, phone, password string) (string, *model.User, error)
 	GetByID(ctx context.Context, id string) (*model.User, error)
 	GetAgentByID(ctx context.Context, id string) (*model.Agent, error)
+	GetAgentByUserID(ctx context.Context, userID string) (*model.Agent, error)
 }
