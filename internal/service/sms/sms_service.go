@@ -7,6 +7,9 @@ import (
 	"phone-tokens/internal/service/certificates"
 	"phone-tokens/internal/service/tokens"
 	"strconv"
+	"strings"
+
+	"github.com/google/uuid"
 )
 
 const callBackUrl = "/api/v1/sms/receive_status"
@@ -57,7 +60,17 @@ func (s *SmsService) SendSms(ctx context.Context, sms model.SmsRequest) (*model.
 	if err != nil {
 		return nil, err
 	}
-	sendSms.ServiceId = agentId
+	resolvedAgentID := strings.TrimSpace(sms.AgentID)
+	if resolvedAgentID == "" {
+		resolvedAgentID = agentId.String()
+	}
+
+	parsedAgentID, parseErr := uuid.Parse(resolvedAgentID)
+	if parseErr != nil {
+		parsedAgentID = agentId
+	}
+
+	sendSms.ServiceId = parsedAgentID
 	sendSms.ServiceName = sms.ServiceName
 	sendSms.Token = sms.ClientToken
 	err = s.Storage.SaveSms(ctx, sendSms)
