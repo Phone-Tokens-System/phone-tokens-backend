@@ -1,10 +1,13 @@
 package model
 
-import "github.com/google/uuid"
+import (
+	"time"
+)
 
 type UserProfile struct {
-	UserId    uuid.UUID `json:"user_id" gorm:"primaryKey;type:uuid"`
-	BirthDate string    `json:"birth_date" gorm:"type:VARCHAR(255)"`
+	UserId    string    `json:"user_id" gorm:"primaryKey;type:uuid"`
+	BirthDate time.Time `json:"birth_date" gorm:"type:VARCHAR(255)"`
+	Age       int       `json:"age" gorm:"type:INTEGER"`
 	Gender    string    `json:"gender" gorm:"type:VARCHAR(10)"`
 	Country   string    `json:"country" gorm:"type:VARCHAR(255)"`
 	Region    string    `json:"region" gorm:"type:VARCHAR(255)"`

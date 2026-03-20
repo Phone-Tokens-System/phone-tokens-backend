@@ -1,7 +1,8 @@
 --+goose Up
 CREATE TABLE IF NOT EXISTS user_profile(
     user_id uuid PRIMARY KEY NOT NULL REFERENCES users(id) ON DELETE CASCADE ,
-    birth_date VARCHAR(255),
+    birth_date timestamp,
+    age int,
     gender VARCHAR(255) NOT NULL ,
     country VARCHAR(255) NOT NULL ,
     region VARCHAR(255),

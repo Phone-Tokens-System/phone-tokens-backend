@@ -17,11 +17,12 @@ import (
 )
 
 type Services struct {
-	User    users.Service
-	Token   tokens.Service
-	SMS     *sms.SmsService
-	Cert    *certificates.CertificateService
-	Billing *billing.BillingService
+	User        users.Service
+	Token       tokens.Service
+	SMS         *sms.SmsService
+	Cert        *certificates.CertificateService
+	Billing     *billing.BillingService
+	UserProfile *users.UserProfileService
 }
 
 func BuildService(cfg Config) (*Services, error) {
@@ -52,6 +53,7 @@ func BuildService(cfg Config) (*Services, error) {
 	}
 
 	userRepo := repository.NewUserRepository(db)
+	userProfileRepo := repository.NewUserProfileRepository(db)
 	tokenRepo := repository.NewTokenRepository(db)
 	smsRepo := repository.NewSmsRepository(db)
 	certificateRepo := repository.NewCertificateRepository(db)
@@ -64,6 +66,7 @@ func BuildService(cfg Config) (*Services, error) {
 	})
 
 	tokenSvc := tokens.NewService(tokenRepo)
+	userProfileSvc := users.NewUserProfileService(userRepo, userProfileRepo, tokenRepo)
 
 	certSvc, err := certificates.NewCertificateService(certificateRepo)
 	if err != nil {
@@ -72,17 +75,18 @@ func BuildService(cfg Config) (*Services, error) {
 
 	smsAdapter := sms_aero.NewAeroService(cfg.APIEmail, cfg.APIKey) // интерфейсную развязку сюда потом
 
-	smsSvc := sms.NewSmsService(*certSvc, smsAdapter, tokenSvc, smsRepo)
+	smsSvc := sms.NewSmsService(*certSvc, userProfileSvc, smsAdapter, tokenSvc, smsRepo)
 
 	billingService := billing.NewBillingService(userRepo, usageRepo, transactionRepo,
 		cfg.BillingConfig.StripeKey, cfg.BillingConfig.WebhookSecret)
 
 	services := Services{
-		User:    userSvc,
-		Token:   tokenSvc,
-		SMS:     smsSvc,
-		Cert:    certSvc,
-		Billing: billingService,
+		User:        userSvc,
+		Token:       tokenSvc,
+		SMS:         smsSvc,
+		Cert:        certSvc,
+		Billing:     billingService,
+		UserProfile: userProfileSvc,
 	}
 	return &services, nil
 }

@@ -171,3 +171,28 @@ func (h *SmsHandler) getSmsListFromProvider(w http.ResponseWriter, req *http.Req
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
+
+// SendSMSWithFilters godoc
+// @Summary Send an SMS with filters for users
+// @Description Sends an SMS to users who apply to filters
+// @Tags SMS
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body dto.SmsFilterRequest true "SMS request payload"
+// @Success 200 {array} []model.SmsResponse "Sent SMS details"
+// @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /api/v1/sms/send_filtered [post]
+func (h *SmsHandler) SendSmsWithFilters(w http.ResponseWriter, req *http.Request) {
+	var smsReq dto.SmsFilterRequest
+	if err := json.NewDecoder(req.Body).Decode(&smsReq); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	smsResp, err := h.smsService.SendSmsWithFilters(req.Context(), smsReq)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	writeJSON(w, http.StatusOK, smsResp)
+}

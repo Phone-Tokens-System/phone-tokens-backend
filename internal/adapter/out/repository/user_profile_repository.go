@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"phone-tokens/internal/model"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -17,6 +18,10 @@ func NewUserProfileRepository(db *gorm.DB) *UserProfileRepository {
 }
 
 func (r *UserProfileRepository) SaveProfile(ctx context.Context, userProfile model.UserProfile) error {
+	if !userProfile.BirthDate.IsZero() {
+		userProfile.Age = calculateAge(userProfile.BirthDate)
+	}
+
 	return r.db.WithContext(ctx).Save(userProfile).Error
 }
 
@@ -41,7 +46,9 @@ func (r *UserProfileRepository) DeleteProfile(ctx context.Context, userId string
 
 // TODO: filter age. normalize gender values at least.
 // maybe countries region city and education too make them a list
-func (r *UserProfileRepository) FilterUserProfiles(ctx context.Context, filterName, filterValue string) ([]model.UserProfile, error) {
+func (r *UserProfileRepository) FilterUserProfiles(ctx context.Context, filters map[string]string) ([]model.UserProfile, error) {
+	query := r.db.WithContext(ctx).Model(&model.UserProfile{})
+
 	allowed := map[string]bool{
 		"gender":    true,
 		"country":   true,
@@ -50,15 +57,86 @@ func (r *UserProfileRepository) FilterUserProfiles(ctx context.Context, filterNa
 		"education": true,
 	}
 
-	if !allowed[filterName] {
-		return nil, fmt.Errorf("invalid filter field")
+	for key, value := range filters {
+		if !allowed[key] {
+			continue
+		}
+		if key == "age_from" {
+			query = query.Where("age >= ?", value)
+		}
+		if key == "age_to" {
+			query = query.Where("age <= ?", value)
+		}
+		query = query.Where(fmt.Sprintf("%s = ?", key), value)
 	}
 
-	var userProfiles []model.UserProfile
-	filter := fmt.Sprintf("%s = ?", filterName)
-	err := r.db.WithContext(ctx).Find(&userProfiles, filter, filterValue).Error
-	if err != nil {
-		return nil, err
+	if val, ok := filters["age_from"]; ok {
+		query = query.Where("age >= ?", val)
 	}
-	return userProfiles, nil
+	if val, ok := filters["age_to"]; ok {
+		query = query.Where("age <= ?", val)
+	}
+
+	var users []model.UserProfile
+	err := query.Find(&users).Error
+	return users, err
+}
+
+func (r *UserProfileRepository) FilterUserProfilesForAgent(ctx context.Context, filters map[string]string, agentID string) ([]model.UserProfile, error) {
+	query := r.db.WithContext(ctx).
+		Model(&model.UserProfile{}).
+		Joins("JOIN tokens ON user_tokens.user_id = user_profile.user_id").
+		Where("user_tokens.agent_id = ?", agentID)
+
+	allowed := map[string]bool{
+		"gender":    true,
+		"country":   true,
+		"region":    true,
+		"city":      true,
+		"education": true,
+	}
+
+	for key, value := range filters {
+		if !allowed[key] {
+			continue
+		}
+		if key == "age_from" {
+			query = query.Where("age >= ?", value)
+		}
+		if key == "age_to" {
+			query = query.Where("age <= ?", value)
+		}
+		query = query.Where(fmt.Sprintf("%s = ?", key), value)
+	}
+
+	if val, ok := filters["age_from"]; ok {
+		query = query.Where("age >= ?", val)
+	}
+	if val, ok := filters["age_to"]; ok {
+		query = query.Where("age <= ?", val)
+	}
+
+	var users []model.UserProfile
+	err := query.Find(&users).Error
+	return users, err
+}
+
+func calculateAge(birthDate time.Time) int {
+	timeNow := time.Now()
+	age := timeNow.Year() - birthDate.Year()
+	if timeNow.YearDay() < birthDate.YearDay() {
+		age--
+	}
+	return age
+}
+
+func (r *UserProfileRepository) GetUserProfilesForAgent(ctx context.Context, agentID string) ([]model.UserProfile, error) {
+	query := r.db.WithContext(ctx).
+		Model(&model.UserProfile{}).
+		Joins("JOIN tokens ON user_tokens.user_id = user_profile.user_id").
+		Where("user_tokens.agent_id = ?", agentID)
+
+	var users []model.UserProfile
+	err := query.Find(&users).Error
+	return users, err
 }
