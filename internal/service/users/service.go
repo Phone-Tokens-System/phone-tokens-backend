@@ -127,10 +127,6 @@ func (s *service) GetByID(ctx context.Context, id string) (*model.User, error) {
 	return s.repo.GetUserByID(ctx, id)
 }
 
-func (s *service) GetAgentByID(ctx context.Context, id string) (*model.Agent, error) {
-	return s.repo.GetAgentByID(ctx, id)
-}
-
 func (s *service) generateToken(user *model.User) (string, error) {
 	claims := jwt.MapClaims{
 		"sub":   user.ID,

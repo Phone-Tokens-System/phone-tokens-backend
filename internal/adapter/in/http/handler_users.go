@@ -134,7 +134,7 @@ func (h *UserHandler) Me(w http.ResponseWriter, r *http.Request) {
 	if claims.Role == model.RoleAgent {
 		agent, err := h.service.GetAgentByUserID(r.Context(), claims.UserID)
 		if err != nil {
-			if !errors.Is(err, users.ErrNotFound) {
+			if !errors.Is(err, model.ErrNotFound) {
 				http.Error(w, "internal error", http.StatusInternalServerError)
 				return
 			}
