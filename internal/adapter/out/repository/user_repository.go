@@ -69,7 +69,7 @@ func (r *UserRepository) GetAgentByUserID(ctx context.Context, userID string) (*
 
 	if err := r.db.WithContext(ctx).Where("user_id = ?", userID).First(&agent).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, users.ErrNotFound
+			return nil, model.ErrNotFound
 		}
 		return nil, err
 	}
