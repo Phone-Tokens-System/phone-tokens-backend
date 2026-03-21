@@ -1,7 +1,6 @@
 package dto
 
 import (
-	"phone-tokens/internal/model"
 	"time"
 )
 
@@ -13,16 +12,18 @@ type UserProfile struct {
 	Region    string    `json:"region"`
 	City      string    `json:"city" `
 	Education string    `json:"education"`
+	Token     string    `json:"token"`
 }
 
-func ToUserProfile(userProfile *model.UserProfile) *UserProfile {
+func ToUserProfile(u *UserProfileToken) *UserProfile {
 	return &UserProfile{
-		BirthDate: userProfile.BirthDate,
-		Age:       userProfile.Age,
-		Gender:    userProfile.Gender,
-		Country:   userProfile.Country,
-		Region:    userProfile.Region,
-		City:      userProfile.City,
-		Education: userProfile.Education,
+		BirthDate: u.UserProfile.BirthDate,
+		Age:       u.UserProfile.Age,
+		Gender:    u.UserProfile.Gender,
+		Country:   u.UserProfile.Country,
+		Region:    u.UserProfile.Region,
+		City:      u.UserProfile.City,
+		Education: u.UserProfile.Education,
+		Token:     u.Token,
 	}
 }

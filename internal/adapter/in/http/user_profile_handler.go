@@ -178,7 +178,8 @@ func (h *UserProfileHandler) GetUserProfileById(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	userDTO := dto.ToUserProfile(u)
+	userDTO := dto.UserProfile{BirthDate: u.BirthDate, Gender: u.Gender,
+		Country: u.Country, Region: u.Region, City: u.City, Age: u.Age}
 	writeJSON(w, http.StatusOK, userDTO)
 }
 
@@ -229,7 +230,12 @@ func (h *UserProfileHandler) GetUserProfilesByAgentID(w http.ResponseWriter, r *
 	if err != nil {
 		return
 	}
-	writeJSON(w, http.StatusOK, userProfiles)
+
+	userDtos := make([]dto.UserProfile, 0)
+	for _, u := range userProfiles {
+		userDtos = append(userDtos, *dto.ToUserProfile(&u))
+	}
+	writeJSON(w, http.StatusOK, userDtos)
 }
 
 // GetUserProfilesFilteredByAgentID godoc
@@ -262,7 +268,11 @@ func (h *UserProfileHandler) GetUserProfilesFilteredByAgentID(w http.ResponseWri
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	writeJSON(w, http.StatusOK, userProfiles)
+	userDtos := make([]dto.UserProfile, 0)
+	for _, u := range userProfiles {
+		userDtos = append(userDtos, *dto.ToUserProfile(&u))
+	}
+	writeJSON(w, http.StatusOK, userDtos)
 }
 
 func GetUserFromContext(ctx context.Context) (*UserClaims, error) {

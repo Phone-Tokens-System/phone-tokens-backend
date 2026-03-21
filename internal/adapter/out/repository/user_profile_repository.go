@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"phone-tokens/internal/adapter/dto"
 	"phone-tokens/internal/model"
 
 	"gorm.io/gorm"
@@ -77,9 +78,20 @@ func (r *UserProfileRepository) FilterUserProfiles(ctx context.Context, filters 
 	return users, err
 }
 
-func (r *UserProfileRepository) FilterUserProfilesForAgent(ctx context.Context, filters map[string]string, agentID string) ([]model.UserProfile, error) {
+func (r *UserProfileRepository) FilterUserProfilesForAgent(
+	ctx context.Context,
+	filters map[string]string,
+	agentID string,
+) ([]dto.UserProfileToken, error) {
+
+	type result struct {
+		model.UserProfile
+		Token string
+	}
+
 	query := r.db.WithContext(ctx).
-		Model(&model.UserProfile{}).
+		Table("user_profile").
+		Select("user_profile.*, user_tokens.token").
 		Joins("JOIN user_tokens ON user_tokens.user_id = user_profile.user_id").
 		Where("user_tokens.agent_id = ?", agentID)
 
@@ -92,37 +104,73 @@ func (r *UserProfileRepository) FilterUserProfilesForAgent(ctx context.Context, 
 	}
 
 	for key, value := range filters {
-		if !allowed[key] {
+		if key == "age_from" {
+			query = query.Where("user_profile.age >= ?", value)
 			continue
 		}
-		if key == "age_from" {
-			query = query.Where("age >= ?", value)
-		}
 		if key == "age_to" {
-			query = query.Where("age <= ?", value)
+			query = query.Where("user_profile.age <= ?", value)
+			continue
 		}
-		query = query.Where(fmt.Sprintf("%s = ?", key), value)
+
+		if allowed[key] {
+			query = query.Where(fmt.Sprintf("user_profile.%s = ?", key), value)
+		}
 	}
 
-	if val, ok := filters["age_from"]; ok {
-		query = query.Where("age >= ?", val)
-	}
-	if val, ok := filters["age_to"]; ok {
-		query = query.Where("age <= ?", val)
+	var rows []result
+	err := query.Scan(&rows).Error
+	if err != nil {
+		return nil, err
 	}
 
-	var users []model.UserProfile
-	err := query.Find(&users).Error
-	return users, err
+	// мапим
+	out := make([]dto.UserProfileToken, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, dto.UserProfileToken{
+			UserProfile: r.UserProfile,
+			Token:       r.Token,
+		})
+	}
+
+	return out, nil
 }
 
-func (r *UserProfileRepository) GetUserProfilesForAgent(ctx context.Context, agentID string) ([]model.UserProfile, error) {
+func (r *UserProfileRepository) GetUserProfilesForAgent(ctx context.Context, agentID string) ([]dto.UserProfileToken, error) {
+	type result struct {
+		model.UserProfile
+		Token string
+	}
+
 	query := r.db.WithContext(ctx).
-		Model(&model.UserProfile{}).
+		Table("user_profile").
+		Select("user_profile.*, user_tokens.token").
 		Joins("JOIN user_tokens ON user_tokens.user_id = user_profile.user_id").
 		Where("user_tokens.agent_id = ?", agentID)
 
-	var users []model.UserProfile
-	err := query.Find(&users).Error
-	return users, err
+	var rows []result
+	err := query.Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// мапим
+	out := make([]dto.UserProfileToken, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, dto.UserProfileToken{
+			UserProfile: r.UserProfile,
+			Token:       r.Token,
+		})
+	}
+
+	return out, nil
+
+	//query := r.db.WithContext(ctx).
+	//	Model(&model.UserProfile{}).
+	//	Joins("JOIN user_tokens ON user_tokens.user_id = user_profile.user_id").
+	//	Where("user_tokens.agent_id = ?", agentID)
+	//
+	//var users []model.UserProfile
+	//err := query.Find(&users).Error
+	//return users, err
 }

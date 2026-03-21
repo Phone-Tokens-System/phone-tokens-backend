@@ -117,17 +117,12 @@ func (s *CertificateService) parseKeyFromPem(keyFile []byte) (*ecdsa.PrivateKey,
 	return key, nil
 }
 func (s *CertificateService) signCertificateForAgent(ctx context.Context, csr *model.CsrRequest) (*bytes.Buffer, error) {
-	fmt.Println("certificate")
 	block := csr.CSR
 
-	fmt.Println(string(block))
 	csrDer, _ := pem.Decode(block)
-	fmt.Println(csrDer.Type)
 	if csrDer == nil || csrDer.Type != "CERTIFICATE REQUEST" {
 		return nil, fmt.Errorf("failed to decode certificate request block")
 	}
-	fmt.Printf("DER len: %d\n", len(csrDer.Bytes))
-	fmt.Println(string(csrDer.Bytes))
 	CSR, err := x509.ParseCertificateRequest(csrDer.Bytes)
 	if err != nil {
 		return nil, err
@@ -137,7 +132,6 @@ func (s *CertificateService) signCertificateForAgent(ctx context.Context, csr *m
 		fmt.Printf("sign %v", err)
 		return nil, err
 	}
-	fmt.Println(string(s.CACertificatePem))
 	certCA, err := s.parseCertFromPem(s.CACertificatePem)
 	if err != nil {
 		fmt.Printf("ourcert %v", err)

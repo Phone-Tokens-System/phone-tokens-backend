@@ -2394,6 +2394,9 @@ const docTemplate = `{
                 },
                 "region": {
                     "type": "string"
+                },
+                "token": {
+                    "type": "string"
                 }
             }
         },

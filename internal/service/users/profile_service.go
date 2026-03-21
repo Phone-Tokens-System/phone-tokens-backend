@@ -29,7 +29,7 @@ func (s *UserProfileService) SaveUserProfile(ctx context.Context, userProfile mo
 	return s.userProfileRepo.SaveProfile(ctx, userProfile)
 }
 
-func (s *UserProfileService) GetUserProfileByToken(ctx context.Context, tokenName string) (*model.UserProfile, error) {
+func (s *UserProfileService) GetUserProfileByToken(ctx context.Context, tokenName string) (*dto.UserProfileToken, error) {
 	token, err := s.tokenRepo.GetTokenByToken(ctx, tokenName)
 	if err != nil {
 		return nil, err
@@ -39,7 +39,7 @@ func (s *UserProfileService) GetUserProfileByToken(ctx context.Context, tokenNam
 	if err != nil {
 		return nil, err
 	}
-	return userProfile, nil
+	return &dto.UserProfileToken{Token: tokenName, UserProfile: *userProfile}, nil
 }
 
 func (s *UserProfileService) GetUserProfileByUserId(ctx context.Context, userId string) (*model.UserProfile, error) {
@@ -62,7 +62,7 @@ func (s *UserProfileService) FilterUserProfiles(ctx context.Context, filter dto.
 	return s.userProfileRepo.FilterUserProfiles(ctx, filter.Filters)
 }
 
-func (s *UserProfileService) FilterUserProfilesByAgentId(ctx context.Context, filter dto.FilterRequest, agentID string) ([]model.UserProfile, error) {
+func (s *UserProfileService) FilterUserProfilesByAgentId(ctx context.Context, filter dto.FilterRequest, agentID string) ([]dto.UserProfileToken, error) {
 	return s.userProfileRepo.FilterUserProfilesForAgent(ctx, filter.Filters, agentID)
 }
 
@@ -88,7 +88,7 @@ func (s *UserProfileService) GetFilteredTokensForAgent(ctx context.Context, req 
 	tokens := make([]model.UserToken, 0)
 
 	for _, profile := range profiles {
-		token, err := s.tokenRepo.GetTokensByUserId(ctx, profile.UserId)
+		token, err := s.tokenRepo.GetTokensByUserId(ctx, profile.UserProfile.UserId)
 		if err != nil {
 			fmt.Println(err)
 			continue
@@ -98,7 +98,7 @@ func (s *UserProfileService) GetFilteredTokensForAgent(ctx context.Context, req 
 	return tokens, nil
 }
 
-func (s *UserProfileService) GetUserProfilesForAgent(ctx context.Context, agentID string) ([]model.UserProfile, error) {
+func (s *UserProfileService) GetUserProfilesForAgent(ctx context.Context, agentID string) ([]dto.UserProfileToken, error) {
 	return s.userProfileRepo.GetUserProfilesForAgent(ctx, agentID)
 }
 
