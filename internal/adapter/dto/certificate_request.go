@@ -1,8 +1,9 @@
 package dto
 
 type CSRRequest struct {
-	CSR   string `json:"csr"`
-	Email string `json:"email"`
+	AgentID string `json:"agent_id;omitempty"`
+	CSR     string `json:"csr"`
+	Email   string `json:"email"`
 }
 
 type CertificateResponse struct {

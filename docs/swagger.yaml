@@ -1,4 +1,11 @@
 definitions:
+  dto.BalanceRequest:
+    properties:
+      agent_id:
+        type: string
+      amount:
+        type: number
+    type: object
   dto.BindTokenRequest:
     properties:
       agent_id:
@@ -6,8 +13,15 @@ definitions:
       token_name:
         type: string
     type: object
+  dto.BuyPackageRequest:
+    properties:
+      pkg_id:
+        type: string
+    type: object
   dto.CSRRequest:
     properties:
+      agent_id;omitempty:
+        type: string
       csr:
         type: string
       email:
@@ -19,6 +33,60 @@ definitions:
         type: string
       csr_id:
         type: integer
+    type: object
+  dto.CountryDTO:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+  dto.Filter:
+    properties:
+      key:
+        type: string
+      option_source:
+        type: string
+      options:
+        items:
+          type: string
+        type: array
+      type:
+        type: string
+    type: object
+  dto.FilterRequest:
+    properties:
+      filters:
+        additionalProperties:
+          type: string
+        type: object
+    type: object
+  dto.FilterResponse:
+    properties:
+      filters:
+        items:
+          $ref: '#/definitions/dto.Filter'
+        type: array
+    type: object
+  dto.RegionDTO:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+  dto.SmsFilterRequest:
+    properties:
+      agent_id:
+        type: string
+      certificate:
+        type: string
+      filters:
+        $ref: '#/definitions/dto.FilterRequest'
+      service_name:
+        type: string
+      text:
+        type: string
     type: object
   dto.SmsId:
     properties:
@@ -46,12 +114,42 @@ definitions:
       token:
         type: string
     type: object
-  dto.TopUpRequest:
+  dto.TokenRequest:
     properties:
-      agent_id:
+      token:
         type: string
-      amount:
-        type: number
+    type: object
+  dto.UserProfile:
+    properties:
+      age:
+        type: integer
+      birth_date:
+        type: string
+      city:
+        type: string
+      country:
+        type: string
+      education:
+        type: string
+      gender:
+        type: string
+      region:
+        type: string
+    type: object
+  dto.UserProfileRequest:
+    properties:
+      birth_date:
+        type: string
+      city:
+        type: string
+      country:
+        type: string
+      education:
+        type: string
+      gender:
+        type: string
+      region:
+        type: string
     type: object
   http.createTokenRequest:
     properties:
@@ -111,8 +209,29 @@ definitions:
       ttl_seconds:
         type: integer
     type: object
+  model.AgentPackages:
+    properties:
+      agent_id:
+        type: string
+      expires_at:
+        type: string
+      id:
+        type: integer
+      package_id:
+        type: string
+      service_type:
+        $ref: '#/definitions/model.ServiceType'
+      status:
+        type: string
+      units_total:
+        type: integer
+      units_used:
+        type: integer
+    type: object
   model.CsrRequest:
     properties:
+      agent_id;omitempty:
+        type: string
       csr:
         items:
           type: integer
@@ -126,6 +245,19 @@ definitions:
       status:
         type: string
     type: object
+  model.Package:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      price:
+        type: number
+      service:
+        $ref: '#/definitions/model.ServiceType'
+      units:
+        type: integer
+    type: object
   model.Role:
     enum:
     - admin
@@ -136,8 +268,18 @@ definitions:
     - RoleAdmin
     - RoleUser
     - RoleAgent
+  model.ServiceType:
+    enum:
+    - SMS
+    - Call
+    type: string
+    x-enum-varnames:
+    - SMS
+    - Call
   model.SmsRequest:
     properties:
+      agent_id:
+        type: string
       certificate:
         type: string
       client_token:
@@ -205,6 +347,25 @@ definitions:
     x-enum-varnames:
     - TokenStatusActive
     - TokenStatusFrozen
+  model.UserProfile:
+    properties:
+      age:
+        type: integer
+      birth_date:
+        type: string
+      city:
+        type: string
+      country:
+        type: string
+      education:
+        type: string
+      gender:
+        type: string
+      region:
+        type: string
+      user_id:
+        type: string
+    type: object
   users.RegisterRequest:
     properties:
       email:
@@ -316,14 +477,195 @@ paths:
       summary: Approve a CSR request
       tags:
       - CSR
-  /api/v1/billing/balance:
+  /api/v1/agents/{agent_id}/packages:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает все пакеты, купленные агентом
+      parameters:
+      - description: ID агента
+        in: path
+        name: agent_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.AgentPackages'
+            type: array
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Получить пакеты агента
+      tags:
+      - Billing
+    post:
+      consumes:
+      - application/json
+      description: Агент покупает пакет услуг (например SMS или звонки)
+      parameters:
+      - description: ID агента
+        in: path
+        name: agent_id
+        required: true
+        type: string
+      - description: Данные покупки пакета
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.BuyPackageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: package purchased
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Купить пакет
+      tags:
+      - Billing
+  /api/v1/agents/tokens/user-profile:
+    get:
+      description: Возвращает список пользователей, чьи токены привязаны к агенту
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.UserProfile'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Получить пользователей агента
+      tags:
+      - agents
+    post:
+      consumes:
+      - application/json
+      description: Возвращает профиль пользователя по токену
+      parameters:
+      - description: Токен
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.TokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.UserProfile'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Получить профиль по токену
+      tags:
+      - user-profile
+  /api/v1/agents/tokens/user-profile/filtered:
+    post:
+      consumes:
+      - application/json
+      description: Возвращает пользователей агента с применением фильтров
+      parameters:
+      - description: Фильтры пользователей
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.FilterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.UserProfile'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Фильтрация пользователей агента
+      tags:
+      - agents
+  /api/v1/billing/{agent_id}/balance:
     get:
       consumes:
       - application/json
       description: Возвращает float64 баланс агента по его ID
       parameters:
       - description: ID агента
-        in: query
+        in: path
         name: agent_id
         required: true
         type: string
@@ -348,6 +690,7 @@ paths:
       summary: Получить текущий баланс агента
       tags:
       - Billing
+  /api/v1/billing/balance:
     post:
       consumes:
       - application/json
@@ -358,7 +701,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/dto.TopUpRequest'
+          $ref: '#/definitions/dto.BalanceRequest'
       produces:
       - application/json
       responses:
@@ -437,6 +780,8 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - BearerAuth: []
       summary: Get signed certificate by CSR ID
       tags:
       - CSR
@@ -475,9 +820,97 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - BearerAuth: []
       summary: Upload a Certificate Signing Request (CSR) file
       tags:
       - CSR
+  /api/v1/dictionary/cities:
+    get:
+      consumes:
+      - application/json
+      description: список городов
+      parameters:
+      - description: ID страны
+        in: query
+        name: country
+        required: true
+        type: string
+      - description: ID региона
+        in: query
+        name: region
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.RegionDTO'
+            type: array
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получить список городов по ид региона и ид страны
+      tags:
+      - dictionary
+  /api/v1/dictionary/countries:
+    get:
+      consumes:
+      - application/json
+      description: список стран
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.CountryDTO'
+            type: array
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получить список стран
+      tags:
+      - dictionary
+  /api/v1/dictionary/regions:
+    get:
+      consumes:
+      - application/json
+      description: список регионов
+      parameters:
+      - description: ID страны
+        in: query
+        name: country
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.RegionDTO'
+            type: array
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получить список регионов страны по ид
+      tags:
+      - dictionary
   /api/v1/login:
     post:
       consumes:
@@ -518,6 +951,31 @@ paths:
       summary: Login a user
       tags:
       - User
+  /api/v1/packages:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список всех пакетов, которые агент может купить
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Package'
+            type: array
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Получить список доступных пакетов
+      tags:
+      - Billing
   /api/v1/register:
     post:
       consumes:
@@ -718,6 +1176,46 @@ paths:
       security:
       - BearerAuth: []
       summary: Send an SMS
+      tags:
+      - SMS
+  /api/v1/sms/send_filtered:
+    post:
+      consumes:
+      - application/json
+      description: Sends an SMS to users who apply to filters
+      parameters:
+      - description: SMS request payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SmsFilterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Sent SMS details
+          schema:
+            items:
+              items:
+                $ref: '#/definitions/model.SmsResponse'
+              type: array
+            type: array
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Send an SMS with filters for users
       tags:
       - SMS
   /api/v1/sms/status:
@@ -1083,6 +1581,153 @@ paths:
       summary: Bind agent (service) to token
       tags:
       - Token
+  /api/v1/user-profile:
+    delete:
+      description: Удаляет профиль текущего пользователя
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Удалить профиль пользователя
+      tags:
+      - user-profile
+    post:
+      consumes:
+      - application/json
+      description: Создает или обновляет профиль текущего пользователя
+      parameters:
+      - description: Данные профиля
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UserProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.UserProfile'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Создать профиль пользователя
+      tags:
+      - user-profile
+    put:
+      consumes:
+      - application/json
+      description: Обновляет профиль текущего пользователя
+      parameters:
+      - description: Данные профиля
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UserProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.UserProfile'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Обновить профиль пользователя
+      tags:
+      - user-profile
+  /api/v1/user-profile/filters:
+    get:
+      description: Возвращает конфигурацию фильтров для UI
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.FilterResponse'
+      summary: Получить доступные фильтры профиля
+      tags:
+      - user-profile
+  /api/v1/user-profile/me:
+    get:
+      description: Возвращает профиль авторизованного пользователя
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.UserProfile'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Получить профиль текущего пользователя
+      tags:
+      - user-profile
   /api/v1/users/{userId}/tokens:
     get:
       consumes:

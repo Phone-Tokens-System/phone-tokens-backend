@@ -7,12 +7,14 @@ import (
 )
 
 type Handlers struct {
-	User    *UserHandler
-	Token   *TokenHandler
-	Sms     *SmsHandler
-	Agent   *AgentHandler
-	Admin   *AdminHandler
-	Billing *BillingHandler
+	User        *UserHandler
+	Token       *TokenHandler
+	Sms         *SmsHandler
+	Agent       *AgentHandler
+	Admin       *AdminHandler
+	Billing     *BillingHandler
+	UserProfile *UserProfileHandler
+	Dict        *DictionaryHandler
 }
 
 func BuildHandlers(services app.Services) *Handlers {
@@ -22,13 +24,17 @@ func BuildHandlers(services app.Services) *Handlers {
 	agent := NewAgentHandler(services.Cert, services.SMS)
 	admin := NewAdminHandler(services.Cert)
 	billing := NewBillingHandler(services.Billing)
+	userProfile := NewUserProfileHandler(services.UserProfile)
+	dict := DictionaryHandler{}
 	return &Handlers{
-		User:    user,
-		Token:   token,
-		Sms:     sms,
-		Agent:   agent,
-		Admin:   admin,
-		Billing: billing,
+		User:        user,
+		Token:       token,
+		Sms:         sms,
+		Agent:       agent,
+		Admin:       admin,
+		Billing:     billing,
+		UserProfile: userProfile,
+		Dict:        &dict,
 	}
 }
 

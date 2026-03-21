@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"phone-tokens/internal/model"
-	"phone-tokens/internal/service/users"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -27,7 +26,7 @@ func (r *UserRepository) GetUserByPhone(ctx context.Context, phone string) (*mod
 
 	if err := r.db.WithContext(ctx).Where("phone = ?", phone).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, users.ErrNotFound
+			return nil, model.ErrNotFound
 		}
 		return nil, err
 	}
@@ -40,7 +39,7 @@ func (r *UserRepository) GetUserByID(ctx context.Context, id string) (*model.Use
 
 	if err := r.db.WithContext(ctx).Where("id = ?", id).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, users.ErrNotFound
+			return nil, model.ErrNotFound
 		}
 		return nil, err
 	}
@@ -57,7 +56,7 @@ func (r *UserRepository) GetAgentByID(ctx context.Context, id string) (*model.Ag
 
 	if err := r.db.WithContext(ctx).Where("id = ?", id).First(&agent).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, users.ErrNotFound
+			return nil, model.ErrNotFound
 		}
 		return nil, err
 	}
@@ -82,7 +81,7 @@ func (r *UserRepository) GetNumberFromUserId(ctx context.Context, userId string)
 	var user model.User
 	if err := r.db.WithContext(ctx).Where("id = ?", userId).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return "", users.ErrNotFound
+			return "", model.ErrNotFound
 		}
 	}
 	return user.Phone, nil

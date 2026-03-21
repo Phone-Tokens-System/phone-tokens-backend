@@ -23,6 +23,7 @@ func NewAgentHandler(certService *certificates.CertificateService, smsService *s
 // @Summary Upload a Certificate Signing Request (CSR) file
 // @Description Accepts a CSR from an agent as a file upload
 // @Tags CSR
+// @Security BearerAuth
 // @Accept multipart/form-data
 // @Produce json
 // @Param csr formData file true "CSR file"
@@ -32,8 +33,14 @@ func NewAgentHandler(certService *certificates.CertificateService, smsService *s
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /api/v1/csr/upload [post]
 func (h *AgentHandler) UploadCSR(w http.ResponseWriter, r *http.Request) {
-	// Ограничим размер файла (например, 1MB)
-	err := r.ParseMultipartForm(1 << 20)
+	agent, err := GetUserFromContext(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+	agentID := agent.UserID
+
+	err = r.ParseMultipartForm(1 << 20)
 	if err != nil {
 		return
 	}
@@ -57,10 +64,10 @@ func (h *AgentHandler) UploadCSR(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Передаем bytes в сервис
 	csr := dto.CSRRequest{
-		CSR:   string(csrBytes),
-		Email: email,
+		CSR:     string(csrBytes),
+		Email:   email,
+		AgentID: agentID,
 	}
 
 	certificate, err := h.CertificateService.AcceptCertificateRequest(r.Context(), csr)
@@ -78,6 +85,7 @@ func (h *AgentHandler) UploadCSR(w http.ResponseWriter, r *http.Request) {
 // @Tags CSR
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id query int true "CSR ID"
 // @Success 200 {object} dto.CertificateResponse "Signed certificate"
 // @Failure 400 {object} map[string]string "Invalid CSR ID"
