@@ -20,7 +20,7 @@ type Handlers struct {
 func BuildHandlers(services app.Services) *Handlers {
 	user := NewUserHandler(services.User)
 	token := NewTokenHandler(services.Token)
-	sms := NewSmsHandler(services.SMS)
+	sms := NewSmsHandler(services.SMS, services.User)
 	agent := NewAgentHandler(services.Cert, services.SMS)
 	admin := NewAdminHandler(services.Cert)
 	billing := NewBillingHandler(services.Billing)

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"gorm.io/gorm"
 	"phone-tokens/internal/model"
 )
 
@@ -114,4 +115,39 @@ func (r *stubRepo) GetUserByID(ctx context.Context, id string) (*model.User, err
 func (r *stubRepo) SaveAgent(ctx context.Context, agent *model.Agent) error {
 	r.savedAgent = agent
 	return nil
+}
+
+func (r *stubRepo) GetAgentByID(ctx context.Context, id string) (*model.Agent, error) {
+	if r.savedAgent != nil && r.savedAgent.ID == id {
+		return r.savedAgent, nil
+	}
+	return nil, ErrNotFound
+}
+
+func (r *stubRepo) GetAgentByUserID(ctx context.Context, userID string) (*model.Agent, error) {
+	if r.savedAgent != nil && r.savedAgent.UserID == userID {
+		return r.savedAgent, nil
+	}
+	return nil, ErrNotFound
+}
+
+func (r *stubRepo) GetNumberFromUserId(ctx context.Context, userId string) (string, error) {
+	user, err := r.GetUserByID(ctx, userId)
+	if err != nil {
+		return "", err
+	}
+	return user.Phone, nil
+}
+
+func (r *stubRepo) WithTransaction(ctx context.Context, fn func(tx *gorm.DB) error) error {
+	return fn(nil)
+}
+
+func (r *stubRepo) UpdateAgent(ctx context.Context, tx *gorm.DB, agent *model.Agent) (*model.Agent, error) {
+	r.savedAgent = agent
+	return agent, nil
+}
+
+func (r *stubRepo) GetAgentForUpdate(ctx context.Context, tx *gorm.DB, id string) (*model.Agent, error) {
+	return r.GetAgentByID(ctx, id)
 }

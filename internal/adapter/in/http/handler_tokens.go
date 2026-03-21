@@ -344,10 +344,10 @@ func (h *TokenHandler) GetTokensByUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
-	//if claims.UserID != userId {
-	//	http.Error(w, "forbidden", http.StatusForbidden)
-	//	return
-	//}
+	if claims.UserID != userId {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
 
 	tokensByUser, err := h.service.GetTokensByUser(r.Context(), userId)
 	if err != nil {

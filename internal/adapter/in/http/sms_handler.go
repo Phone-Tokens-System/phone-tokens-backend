@@ -7,14 +7,16 @@ import (
 	"phone-tokens/internal/adapter/dto"
 	"phone-tokens/internal/model"
 	"phone-tokens/internal/service/sms"
+	"phone-tokens/internal/service/users"
 )
 
 type SmsHandler struct {
 	smsService *sms.SmsService
+	userSvc    users.Service
 }
 
-func NewSmsHandler(smsService *sms.SmsService) *SmsHandler {
-	return &SmsHandler{smsService: smsService}
+func NewSmsHandler(smsService *sms.SmsService, userSvc users.Service) *SmsHandler {
+	return &SmsHandler{smsService: smsService, userSvc: userSvc}
 }
 
 // SendSMS godoc
@@ -35,6 +37,23 @@ func (h *SmsHandler) sendSMS(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
+	}
+
+	if h.userSvc != nil {
+		claims, ok := req.Context().Value(userContextKey).(*UserClaims)
+		if !ok || claims.UserID == "" {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		agent, err := h.userSvc.GetAgentByUserID(req.Context(), claims.UserID)
+		if err != nil {
+			http.Error(w, "failed to resolve agent profile", http.StatusInternalServerError)
+			return
+		}
+		if agent != nil {
+			request.AgentID = agent.ID
+		}
 	}
 
 	sentSms, err := h.smsService.SendSms(req.Context(), request)
