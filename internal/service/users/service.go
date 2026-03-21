@@ -30,10 +30,6 @@ type service struct {
 	config Config
 }
 
-func (s *service) GetAgentByID(ctx context.Context, id string) (*model.Agent, error) {
-	return s.repo.GetAgentByID(ctx, id)
-}
-
 func NewService(repo Repository, cfg Config) Service {
 	return &service{
 		repo:   repo,
@@ -52,7 +48,7 @@ func (s *service) Register(ctx context.Context, req RegisterRequest) (*model.Use
 	}
 
 	existing, err := s.repo.GetUserByPhone(ctx, req.Phone)
-	if err != nil && !errors.Is(err, ErrNotFound) {
+	if err != nil && !errors.Is(err, model.ErrNotFound) {
 		return nil, err
 	}
 	if existing != nil {
@@ -101,7 +97,7 @@ func (s *service) Register(ctx context.Context, req RegisterRequest) (*model.Use
 func (s *service) Authenticate(ctx context.Context, phone, password string) (string, *model.User, error) {
 	user, err := s.repo.GetUserByPhone(ctx, phone)
 	if err != nil {
-		if errors.Is(err, ErrNotFound) {
+		if errors.Is(err, model.ErrNotFound) {
 			return "", nil, ErrInvalidCredentials
 		}
 		return "", nil, err
@@ -123,6 +119,10 @@ func (s *service) GetByID(ctx context.Context, id string) (*model.User, error) {
 	return s.repo.GetUserByID(ctx, id)
 }
 
+func (s *service) GetAgentByID(ctx context.Context, id string) (*model.Agent, error) {
+	return s.repo.GetAgentByID(ctx, id)
+}
+
 func (s *service) generateToken(user *model.User) (string, error) {
 	claims := jwt.MapClaims{
 		"sub":   user.ID,
@@ -134,8 +134,6 @@ func (s *service) generateToken(user *model.User) (string, error) {
 	t := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return t.SignedString([]byte(s.config.JWTSecret))
 }
-
-var ErrNotFound = errors.New("user not found")
 
 func sanitizeSelfAssignedRole(role model.Role) (model.Role, error) {
 	if role == "" {

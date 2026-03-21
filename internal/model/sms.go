@@ -11,6 +11,7 @@ type SmsRequest struct {
 	Certificate string `json:"certificate"`
 	ClientToken string `json:"client_token"`
 	Text        string `json:"text"`
+	AgentID     string `json:"agent_id,omitempty" gorm:"-"`
 }
 
 /*

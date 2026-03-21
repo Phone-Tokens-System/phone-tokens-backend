@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"phone-tokens/internal/model"
 	"phone-tokens/internal/service/tokens"
-	"phone-tokens/internal/service/users"
 
 	"gorm.io/gorm"
 )
@@ -83,7 +82,7 @@ func (r *TokenRepository) GetUserIdFromToken(ctx context.Context, token string) 
 	var user model.UserToken
 	if err := r.db.WithContext(ctx).Where("token = ?", token).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return "", users.ErrNotFound
+			return "", model.ErrNotFound
 		}
 	}
 	return user.UserID, nil
@@ -94,7 +93,7 @@ func (r *TokenRepository) GetNumberFromUserId(ctx context.Context, userId string
 	var user model.User
 	if err := r.db.WithContext(ctx).Where("id = ?", userId).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return "", users.ErrNotFound
+			return "", model.ErrNotFound
 		}
 	}
 	return user.Phone, nil
@@ -104,7 +103,7 @@ func (r *TokenRepository) GetTokenByToken(ctx context.Context, token string) (*m
 	var tokenObj model.UserToken
 	if err := r.db.WithContext(ctx).Where("token = ?", token).First(&tokenObj).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, users.ErrNotFound
+			return nil, model.ErrNotFound
 		}
 	}
 	return &tokenObj, nil

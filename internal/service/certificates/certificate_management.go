@@ -116,8 +116,10 @@ func (s *CertificateService) parseKeyFromPem(keyFile []byte) (*ecdsa.PrivateKey,
 	}
 	return key, nil
 }
-func (s *CertificateService) signCertificateForAgent(ctx context.Context, block []byte, csrID int) (*bytes.Buffer, error) {
+func (s *CertificateService) signCertificateForAgent(ctx context.Context, csr *model.CsrRequest) (*bytes.Buffer, error) {
 	fmt.Println("certificate")
+	block := csr.CSR
+
 	fmt.Println(string(block))
 	csrDer, _ := pem.Decode(block)
 	fmt.Println(csrDer.Type)
@@ -147,8 +149,12 @@ func (s *CertificateService) signCertificateForAgent(ctx context.Context, block 
 		return nil, err
 	}
 
-	uid := uuid.New()
-	serialNumber := new(big.Int).SetBytes(uid[:])
+	parsedUUID, err := uuid.Parse(csr.AgentID)
+	if err != nil {
+		return nil, err
+	}
+
+	serialNumber := new(big.Int).SetBytes(parsedUUID[:])
 
 	serviceCert := &x509.Certificate{
 		SerialNumber: serialNumber,
@@ -180,8 +186,8 @@ func (s *CertificateService) signCertificateForAgent(ctx context.Context, block 
 		OrganizationID: CSR.Subject.Organization[0],
 		CertificatePem: certPem.Bytes(),
 		IsActive:       true,
-		CsrID:          csrID,
-		ID:             uid,
+		CsrID:          csr.ID,
+		ID:             parsedUUID,
 	}
 	err = s.Storage.SaveCertificateInfo(ctx, agentInfo)
 	if err != nil {

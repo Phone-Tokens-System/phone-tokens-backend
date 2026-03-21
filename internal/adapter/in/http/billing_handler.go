@@ -2,9 +2,9 @@ package http
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
+	"phone-tokens/internal/adapter/dto"
 	"phone-tokens/internal/service/billing"
 
 	"github.com/stripe/stripe-go/v74"
@@ -34,17 +34,13 @@ func NewBillingHandler(billingService *billing.BillingService) *BillingHandler {
 // @Tags Billing
 // @Accept json
 // @Produce json
-// @Param request body dto.TopUpRequest true "Request payload"
+// @Param request body dto.BalanceRequest true "Request payload"
 // @Success 200 {object} map[string]string "URL для редиректа на Stripe Checkout"
 // @Failure 400 {object} map[string]string "Некорректный запрос"
 // @Failure 500 {object} map[string]string "Ошибка сервера"
 // @Router /api/v1/billing/balance [post]
 func (h *BillingHandler) TopBalance(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		AgentID string  `json:"agent_id"`
-		Amount  float64 `json:"amount"`
-	}
-
+	var req dto.BalanceRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request", http.StatusBadRequest)
 		return
@@ -56,15 +52,18 @@ func (h *BillingHandler) TopBalance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// возвращаем JSON с URL для редиректа на Stripe
-	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(map[string]string{
+	writeJSON(w, http.StatusCreated, map[string]string{
 		"checkout_url": url,
 	})
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	// возвращаем JSON с URL для редиректа на Stripe
+	//w.Header().Set("Content-Type", "application/json")
+	//err = json.NewEncoder(w).Encode(map[string]string{
+	//    "checkout_url": url,
+	//})
+	//if err != nil {
+	//    fmt.Println(err)
+	//    return
+	//}
 }
 
 // StripeWebhookHandler godoc
@@ -109,20 +108,87 @@ func (h *BillingHandler) StripeWebhookHandler(w http.ResponseWriter, r *http.Req
 // @Tags Billing
 // @Accept json
 // @Produce json
-// @Param agent_id query string true "ID агента"
+// @Param agent_id path string true "ID агента"
 // @Success 200 {object} map[string]float64 "Баланс агента"
 // @Failure 404 {object} map[string]string "Агент не найден"
-// @Router /api/v1/billing/balance [get]
+// @Router /api/v1/billing/{agent_id}/balance [get]
 func (h *BillingHandler) GetBalanceHandler(w http.ResponseWriter, r *http.Request) {
-	agentID := r.URL.Query().Get("agent_id")
+	agentID := r.PathValue("agent_id")
 	balance, err := h.BillingService.GetBalance(r.Context(), agentID) // метод возвращает float64
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	err = json.NewEncoder(w).Encode(map[string]float64{"balance": balance})
+	writeJSON(w, http.StatusOK, map[string]float64{"balance": balance})
+}
+
+// SeePackageOptionsHandler godoc
+// @Summary Получить список доступных пакетов
+// @Description Возвращает список всех пакетов, которые агент может купить
+// @Tags Billing
+// @Accept json
+// @Produce json
+// @Success 200 {array} model.Package
+// @Failure 404 {object} map[string]string
+// @Security BearerAuth
+// @Router /api/v1/packages [get]
+func (h *BillingHandler) SeePackageOptionsHandler(w http.ResponseWriter, r *http.Request) {
+	pkgs, err := h.BillingService.GetPackages(r.Context())
 	if err != nil {
-		fmt.Println(err)
+		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
+
+	writeJSON(w, http.StatusOK, pkgs)
+}
+
+// BuyPackageHandler godoc
+// @Summary Купить пакет
+// @Description Агент покупает пакет услуг (например SMS или звонки)
+// @Tags Billing
+// @Accept json
+// @Produce json
+// @Param agent_id path string true "ID агента"
+// @Param request body dto.BuyPackageRequest true "Данные покупки пакета"
+// @Success 200 {object} map[string]string "package purchased"
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Security BearerAuth
+// @Router /api/v1/agents/{agent_id}/packages [post]
+func (h *BillingHandler) BuyPackageHandler(w http.ResponseWriter, r *http.Request) {
+	agentID := r.PathValue("agent_id")
+
+	var req dto.BuyPackageRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request", http.StatusBadRequest)
+		return
+	}
+
+	err := h.BillingService.AddAgentPkg(r.Context(), req.PkgID, agentID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+// SeeAgentPackagesHandler godoc
+// @Summary Получить пакеты агента
+// @Description Возвращает все пакеты, купленные агентом
+// @Tags Billing
+// @Accept json
+// @Produce json
+// @Param agent_id path string true "ID агента"
+// @Success 200 {array} model.AgentPackages
+// @Failure 404 {object} map[string]string
+// @Security BearerAuth
+// @Router /api/v1/agents/{agent_id}/packages [get]
+func (h *BillingHandler) SeeAgentPackagesHandler(w http.ResponseWriter, r *http.Request) {
+	agentID := r.PathValue("agent_id")
+	pkgs, err := h.BillingService.GetPackagesByAgentId(r.Context(), agentID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	writeJSON(w, http.StatusOK, pkgs)
 }

@@ -3,9 +3,11 @@ package sms
 import (
 	"context"
 	"fmt"
+	"phone-tokens/internal/adapter/dto"
 	"phone-tokens/internal/model"
 	"phone-tokens/internal/service/certificates"
 	"phone-tokens/internal/service/tokens"
+	"phone-tokens/internal/service/users"
 	"strconv"
 )
 
@@ -15,13 +17,14 @@ const callBackUrl = "/api/v1/sms/receive_status"
 // Сам смс сервис. Использует смс адаптер и сервис сертификатов для валидации серта
 type SmsService struct {
 	CertificateService certificates.CertificateService
+	userProfileService *users.UserProfileService
 	SmsAdapter         SmsAdapter
 	TokenService       tokens.Service
 	Storage            Repository `json:"storage"`
 }
 
-func NewSmsService(cs certificates.CertificateService, adapter SmsAdapter, tokens tokens.Service, storage Repository) *SmsService {
-	return &SmsService{cs, adapter, tokens, storage}
+func NewSmsService(cs certificates.CertificateService, up *users.UserProfileService, adapter SmsAdapter, tokens tokens.Service, storage Repository) *SmsService {
+	return &SmsService{cs, up, adapter, tokens, storage}
 }
 
 // SendSms
@@ -114,4 +117,33 @@ func (s *SmsService) GetSmsListFromProvider(ctx context.Context) ([]model.SmsRes
 		return nil, err
 	}
 	return responses, nil
+}
+
+// get filters for user profile options
+func (h *SmsService) GetFilters() dto.FilterResponse {
+	return h.userProfileService.GetFilters()
+}
+
+func (h *SmsService) SendSmsWithFilters(ctx context.Context, req dto.SmsFilterRequest) ([]model.SmsResponse, error) {
+	tokens, err := h.userProfileService.GetFilteredTokensForAgent(ctx, req.Filters, req.AgentID)
+	if err != nil {
+		return nil, err
+	}
+
+	smses := make([]model.SmsResponse, 0)
+
+	for _, token := range tokens {
+		smsReq := model.SmsRequest{
+			ServiceName: req.ServiceName,
+			Certificate: req.Certificate,
+			Text:        req.Text,
+			ClientToken: token.Token,
+		}
+		smsResp, err := h.SendSms(ctx, smsReq)
+		if err != nil {
+			return nil, err
+		}
+		smses = append(smses, *smsResp)
+	}
+	return smses, nil
 }
