@@ -1,4 +1,4 @@
---+goose Up
+-- +goose Up
 CREATE TABLE IF NOT EXISTS user_profile(
     user_id uuid PRIMARY KEY NOT NULL REFERENCES users(id) ON DELETE CASCADE ,
     birth_date timestamp,
@@ -10,5 +10,5 @@ CREATE TABLE IF NOT EXISTS user_profile(
     education VARCHAR(255)
 );
 
---+goose Down
+-- +goose Down
 DROP TABLE IF EXISTS user_profile;

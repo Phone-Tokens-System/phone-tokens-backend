@@ -7,6 +7,7 @@ import (
 	"phone-tokens/internal/adapter/out/repository"
 	"phone-tokens/internal/model"
 	"phone-tokens/internal/service/tokens"
+	"time"
 )
 
 type UserProfileService struct {
@@ -21,6 +22,10 @@ func NewUserProfileService(repo Repository, userProfileRepo *repository.UserProf
 }
 
 func (s *UserProfileService) SaveUserProfile(ctx context.Context, userProfile model.UserProfile) error {
+	if !userProfile.BirthDate.IsZero() {
+		userProfile.Age = calculateAge(userProfile.BirthDate)
+	}
+
 	return s.userProfileRepo.SaveProfile(ctx, userProfile)
 }
 
@@ -95,4 +100,13 @@ func (s *UserProfileService) GetFilteredTokensForAgent(ctx context.Context, req 
 
 func (s *UserProfileService) GetUserProfilesForAgent(ctx context.Context, agentID string) ([]model.UserProfile, error) {
 	return s.userProfileRepo.GetUserProfilesForAgent(ctx, agentID)
+}
+
+func calculateAge(birthDate time.Time) int {
+	timeNow := time.Now()
+	age := timeNow.Year() - birthDate.Year()
+	if timeNow.YearDay() < birthDate.YearDay() {
+		age--
+	}
+	return age
 }

@@ -46,8 +46,8 @@ func RegisterRoutes(mux *http.ServeMux, h Handlers, authCfg AuthConfig) {
 	mux.Handle("GET /api/v1/user-profile/me", authMiddleware(RequireRole("user", http.HandlerFunc(h.UserProfile.GetUserProfileById))))
 
 	// agents
-	mux.HandleFunc("GET /api/v1/csr/signed", h.Agent.GetSignedCertificate)
-	mux.HandleFunc("POST /api/v1/csr/upload", h.Agent.UploadCSR)
+	mux.Handle("GET /api/v1/csr/signed", authMiddleware(RequireRole("agent", http.HandlerFunc(h.Agent.GetSignedCertificate))))
+	mux.Handle("POST /api/v1/csr/upload", authMiddleware(RequireRole("agent", http.HandlerFunc(h.Agent.UploadCSR))))
 	mux.Handle("GET /api/v1/sms/agents/logs", authMiddleware(RequireRole("agent", http.HandlerFunc(h.Agent.SeeSMSLogs))))
 	// manage user profiles(agent)
 	mux.Handle("POST /api/v1/agents/tokens/user-profile", authMiddleware(RequireRole("agent", http.HandlerFunc(h.UserProfile.GetUserProfileByToken))))
@@ -75,4 +75,9 @@ func RegisterRoutes(mux *http.ServeMux, h Handlers, authCfg AuthConfig) {
 	mux.Handle("POST /api/v1/billing/balance", authMiddleware(RequireRole("agent", http.HandlerFunc(h.Billing.TopBalance))))
 	mux.HandleFunc("POST /api/v1/billing/webhook", h.Billing.StripeWebhookHandler)
 	mux.Handle("GET /api/v1/billing/balance", authMiddleware(http.HandlerFunc(h.Billing.GetBalanceHandler)))
+
+	//dict
+	mux.Handle("GET /api/v1/dictionary/countries", http.HandlerFunc(h.Dict.GetCountries))
+	mux.Handle("GET /api/v1/dictionary/regions", http.HandlerFunc(h.Dict.GetRegions))
+	mux.Handle("GET /api/v1/dictionary/cities", http.HandlerFunc(h.Dict.GetCities))
 }

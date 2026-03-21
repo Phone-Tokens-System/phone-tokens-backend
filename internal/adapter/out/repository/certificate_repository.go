@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"phone-tokens/internal/model"
 
@@ -20,7 +19,6 @@ func NewCertificateRepository(db *gorm.DB) *CertificateRepository {
 func (r *CertificateRepository) SaveCsrRequest(ctx context.Context, request model.CsrRequest) (model.CsrRequest, error) {
 	log.Println(r)
 	err := r.db.WithContext(ctx).Save(&request).Error
-	fmt.Println(err)
 	log.Println(err)
 	if err != nil {
 		return model.CsrRequest{}, err

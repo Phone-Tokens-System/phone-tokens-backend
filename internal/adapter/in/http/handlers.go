@@ -14,6 +14,7 @@ type Handlers struct {
 	Admin       *AdminHandler
 	Billing     *BillingHandler
 	UserProfile *UserProfileHandler
+	Dict        *DictionaryHandler
 }
 
 func BuildHandlers(services app.Services) *Handlers {
@@ -24,6 +25,7 @@ func BuildHandlers(services app.Services) *Handlers {
 	admin := NewAdminHandler(services.Cert)
 	billing := NewBillingHandler(services.Billing)
 	userProfile := NewUserProfileHandler(services.UserProfile)
+	dict := DictionaryHandler{}
 	return &Handlers{
 		User:        user,
 		Token:       token,
@@ -32,6 +34,7 @@ func BuildHandlers(services app.Services) *Handlers {
 		Admin:       admin,
 		Billing:     billing,
 		UserProfile: userProfile,
+		Dict:        &dict,
 	}
 }
 

@@ -593,6 +593,11 @@ const docTemplate = `{
         },
         "/api/v1/csr/signed": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Returns the signed certificate for the given CSR ID",
                 "consumes": [
                     "application/json"
@@ -643,6 +648,11 @@ const docTemplate = `{
         },
         "/api/v1/csr/upload": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Accepts a CSR from an agent as a file upload",
                 "consumes": [
                     "multipart/form-data"
@@ -1896,7 +1906,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.UserProfile"
+                            "$ref": "#/definitions/dto.UserProfileRequest"
                         }
                     }
                 ],
@@ -1960,7 +1970,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.UserProfile"
+                            "$ref": "#/definitions/dto.UserProfileRequest"
                         }
                     }
                 ],
@@ -2207,6 +2217,9 @@ const docTemplate = `{
         "dto.CSRRequest": {
             "type": "object",
             "properties": {
+                "agent_id;omitempty": {
+                    "type": "string"
+                },
                 "csr": {
                     "type": "string"
                 },
@@ -2384,6 +2397,29 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.UserProfileRequest": {
+            "type": "object",
+            "properties": {
+                "birth_date": {
+                    "type": "string"
+                },
+                "city": {
+                    "type": "string"
+                },
+                "country": {
+                    "type": "string"
+                },
+                "education": {
+                    "type": "string"
+                },
+                "gender": {
+                    "type": "string"
+                },
+                "region": {
+                    "type": "string"
+                }
+            }
+        },
         "http.createTokenRequest": {
             "type": "object",
             "properties": {
@@ -2506,6 +2542,9 @@ const docTemplate = `{
         "model.CsrRequest": {
             "type": "object",
             "properties": {
+                "agent_id;omitempty": {
+                    "type": "string"
+                },
                 "csr": {
                     "type": "array",
                     "items": {

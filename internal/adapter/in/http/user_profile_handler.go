@@ -8,6 +8,7 @@ import (
 	"phone-tokens/internal/adapter/dto"
 	"phone-tokens/internal/model"
 	"phone-tokens/internal/service/users"
+	"time"
 )
 
 type UserProfileHandler struct {
@@ -38,7 +39,7 @@ func (h *UserProfileHandler) GetFilters(w http.ResponseWriter, r *http.Request) 
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param request body model.UserProfile true "Данные профиля"
+// @Param request body dto.UserProfileRequest true "Данные профиля"
 // @Success 200 {object} model.UserProfile
 // @Failure 400 {object} map[string]string
 // @Failure 401 {object} map[string]string
@@ -52,16 +53,33 @@ func (h *UserProfileHandler) SaveUserProfile(w http.ResponseWriter, r *http.Requ
 	}
 	userId := user.UserID
 
-	var req model.UserProfile
+	var req dto.UserProfileRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	req.UserId = userId
-	err = h.userProfileService.SaveUserProfile(r.Context(), req)
+
+	t, err := parseTime(req.BirthDate)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	userProfile := model.UserProfile{
+		UserId:    userId,
+		BirthDate: t,
+		Gender:    req.Gender,
+		Country:   req.Country,
+		Region:    req.Region,
+		City:      req.City,
+		Education: req.Education,
+	}
+	userProfile.UserId = userId
+	err = h.userProfileService.SaveUserProfile(r.Context(), userProfile)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+	writeJSON(w, http.StatusOK, userProfile)
 }
 
 // DeleteUserProfile godoc
@@ -94,7 +112,7 @@ func (h *UserProfileHandler) DeleteUserProfile(w http.ResponseWriter, r *http.Re
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param request body model.UserProfile true "Данные профиля"
+// @Param request body dto.UserProfileRequest true "Данные профиля"
 // @Success 200 {object} model.UserProfile
 // @Failure 400 {object} map[string]string
 // @Failure 401 {object} map[string]string
@@ -107,16 +125,34 @@ func (h *UserProfileHandler) UpdateUserProfile(w http.ResponseWriter, r *http.Re
 		return
 	}
 	userId := user.UserID
-	var req model.UserProfile
+	var req dto.UserProfileRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	req.UserId = userId
-	err = h.userProfileService.UpdateUserProfile(r.Context(), userId, &req)
+
+	t, err := parseTime(req.BirthDate)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	userProfile := model.UserProfile{
+		UserId:    userId,
+		BirthDate: t,
+		Gender:    req.Gender,
+		Country:   req.Country,
+		Region:    req.Region,
+		City:      req.City,
+		Education: req.Education,
+	}
+	userProfile.UserId = userId
+
+	err = h.userProfileService.UpdateUserProfile(r.Context(), userId, &userProfile)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+	writeJSON(w, http.StatusOK, userProfile)
 }
 
 // GetUserProfileById godoc
@@ -235,4 +271,12 @@ func GetUserFromContext(ctx context.Context) (*UserClaims, error) {
 		return nil, fmt.Errorf("user not found in context")
 	}
 	return claims, nil
+}
+
+func parseTime(timeStr string) (time.Time, error) {
+	t, err := time.Parse("2006-01-02", timeStr)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return t, nil
 }

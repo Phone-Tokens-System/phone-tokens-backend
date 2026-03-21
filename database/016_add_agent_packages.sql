@@ -1,4 +1,4 @@
---+goose Up
+-- +goose Up
 CREATE TABLE IF NOT EXISTS agent_packages(
     id SERIAL PRIMARY KEY NOT NULL ,
     agent_id uuid NOT NULL REFERENCES agents(id),
@@ -9,5 +9,5 @@ CREATE TABLE IF NOT EXISTS agent_packages(
     expires_at timestamp
 );
 
---+goose Down
+-- +goose Down
 DROP TABLE IF EXISTS agent_packages;

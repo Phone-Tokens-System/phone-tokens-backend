@@ -8,9 +8,10 @@ import (
 
 func (s *CertificateService) AcceptCertificateRequest(ctx context.Context, requestDTO dto.CSRRequest) (int, error) {
 	csrRequest := model.CsrRequest{
-		CSR:    []byte(requestDTO.CSR),
-		Status: "PENDING",
-		Email:  requestDTO.Email,
+		CSR:     []byte(requestDTO.CSR),
+		Status:  "PENDING",
+		Email:   requestDTO.Email,
+		AgentID: requestDTO.AgentID,
 	}
 
 	request, err := s.Storage.SaveCsrRequest(ctx, csrRequest)
@@ -31,7 +32,7 @@ func (s *CertificateService) ApproveCertificateRequest(ctx context.Context, ID i
 		return nil, err
 	}
 
-	_, err = s.signCertificateForAgent(ctx, csr.CSR, ID)
+	_, err = s.signCertificateForAgent(ctx, csr)
 	if err != nil {
 		return nil, err
 	}

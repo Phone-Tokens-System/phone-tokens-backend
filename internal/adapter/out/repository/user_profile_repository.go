@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"phone-tokens/internal/model"
-	"time"
 
 	"gorm.io/gorm"
 )
@@ -18,10 +17,6 @@ func NewUserProfileRepository(db *gorm.DB) *UserProfileRepository {
 }
 
 func (r *UserProfileRepository) SaveProfile(ctx context.Context, userProfile model.UserProfile) error {
-	if !userProfile.BirthDate.IsZero() {
-		userProfile.Age = calculateAge(userProfile.BirthDate)
-	}
-
 	return r.db.WithContext(ctx).Save(userProfile).Error
 }
 
@@ -85,7 +80,7 @@ func (r *UserProfileRepository) FilterUserProfiles(ctx context.Context, filters 
 func (r *UserProfileRepository) FilterUserProfilesForAgent(ctx context.Context, filters map[string]string, agentID string) ([]model.UserProfile, error) {
 	query := r.db.WithContext(ctx).
 		Model(&model.UserProfile{}).
-		Joins("JOIN tokens ON user_tokens.user_id = user_profile.user_id").
+		Joins("JOIN user_tokens ON user_tokens.user_id = user_profile.user_id").
 		Where("user_tokens.agent_id = ?", agentID)
 
 	allowed := map[string]bool{
@@ -121,19 +116,10 @@ func (r *UserProfileRepository) FilterUserProfilesForAgent(ctx context.Context, 
 	return users, err
 }
 
-func calculateAge(birthDate time.Time) int {
-	timeNow := time.Now()
-	age := timeNow.Year() - birthDate.Year()
-	if timeNow.YearDay() < birthDate.YearDay() {
-		age--
-	}
-	return age
-}
-
 func (r *UserProfileRepository) GetUserProfilesForAgent(ctx context.Context, agentID string) ([]model.UserProfile, error) {
 	query := r.db.WithContext(ctx).
 		Model(&model.UserProfile{}).
-		Joins("JOIN tokens ON user_tokens.user_id = user_profile.user_id").
+		Joins("JOIN user_tokens ON user_tokens.user_id = user_profile.user_id").
 		Where("user_tokens.agent_id = ?", agentID)
 
 	var users []model.UserProfile
