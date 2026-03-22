@@ -178,8 +178,15 @@ func (h *UserProfileHandler) GetUserProfileById(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	userDTO := dto.UserProfile{BirthDate: u.BirthDate, Gender: u.Gender,
-		Country: u.Country, Region: u.Region, City: u.City, Age: u.Age}
+	userDTO := dto.UserProfile{
+		BirthDate: u.BirthDate,
+		Gender:    u.Gender,
+		Country:   u.Country,
+		Region:    u.Region,
+		City:      u.City,
+		Age:       u.Age,
+		Education: u.Education,
+	}
 	writeJSON(w, http.StatusOK, userDTO)
 }
 
