@@ -33,6 +33,8 @@ func RegisterRoutes(mux *http.ServeMux, h Handlers, authCfg AuthConfig) {
 	mux.Handle("POST /api/v1/tokens/bind-agent", authMiddleware(http.HandlerFunc(h.Token.BindAgentToToken)))
 
 	//manage user profiles (user)
+	mux.Handle("GET /api/v1/user-profile/filters", http.HandlerFunc(h.UserProfile.GetFilters))
+	mux.Handle("GET /api/v1/userprofile/filters", http.HandlerFunc(h.UserProfile.GetFilters))
 	mux.Handle("POST /api/v1/user-profile", authMiddleware(RequireRole("user", http.HandlerFunc(h.UserProfile.SaveUserProfile))))
 	mux.Handle("DELETE /api/v1/user-profile", authMiddleware(RequireRole("user", http.HandlerFunc(h.UserProfile.DeleteUserProfile))))
 	mux.Handle("PUT /api/v1/user-profile", authMiddleware(RequireRole("user", http.HandlerFunc(h.UserProfile.UpdateUserProfile))))
@@ -54,7 +56,7 @@ func RegisterRoutes(mux *http.ServeMux, h Handlers, authCfg AuthConfig) {
 
 	//sms
 	mux.Handle("POST /api/v1/sms/send", authMiddleware(RequireRole("agent", http.HandlerFunc(h.Sms.sendSMS))))
-	mux.Handle("POST /api/v1/sms/send_filtered", authMiddleware(RequireRole("agent", http.HandlerFunc(h.Sms.sendSMS))))
+	mux.Handle("POST /api/v1/sms/send_filtered", authMiddleware(RequireRole("agent", http.HandlerFunc(h.Sms.SendSmsWithFilters))))
 	mux.Handle("GET /api/v1/sms/agents/{agentId}", authMiddleware(RequireRole("agent", http.HandlerFunc(h.Sms.getSmsListByAgentId))))
 
 	// sms admin
@@ -67,6 +69,7 @@ func RegisterRoutes(mux *http.ServeMux, h Handlers, authCfg AuthConfig) {
 	// billing
 	mux.Handle("POST /api/v1/billing/balance", authMiddleware(RequireRole("agent", http.HandlerFunc(h.Billing.TopBalance))))
 	mux.HandleFunc("POST /api/v1/billing/webhook", h.Billing.StripeWebhookHandler)
+	mux.Handle("GET /api/v1/billing/{agent_id}/balance", authMiddleware(http.HandlerFunc(h.Billing.GetBalanceHandler)))
 	mux.Handle("GET /api/v1/billing/balance", authMiddleware(http.HandlerFunc(h.Billing.GetBalanceHandler)))
 
 	//dict

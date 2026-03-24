@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"phone-tokens/internal/adapter/dto"
 	"phone-tokens/internal/service/billing"
+	"strings"
 
 	"github.com/stripe/stripe-go/v74"
 	"github.com/stripe/stripe-go/v74/webhook"
@@ -113,7 +114,15 @@ func (h *BillingHandler) StripeWebhookHandler(w http.ResponseWriter, r *http.Req
 // @Failure 404 {object} map[string]string "Агент не найден"
 // @Router /api/v1/billing/{agent_id}/balance [get]
 func (h *BillingHandler) GetBalanceHandler(w http.ResponseWriter, r *http.Request) {
-	agentID := r.PathValue("agent_id")
+	agentID := strings.TrimSpace(r.PathValue("agent_id"))
+	if agentID == "" {
+		agentID = strings.TrimSpace(r.URL.Query().Get("agent_id"))
+	}
+	if agentID == "" {
+		http.Error(w, "agent_id is required", http.StatusBadRequest)
+		return
+	}
+
 	balance, err := h.BillingService.GetBalance(r.Context(), agentID) // метод возвращает float64
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
