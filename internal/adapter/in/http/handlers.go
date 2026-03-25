@@ -17,13 +17,13 @@ type Handlers struct {
 	Dict        *DictionaryHandler
 }
 
-func BuildHandlers(services app.Services) *Handlers {
+func BuildHandlers(services app.Services, secret string) *Handlers {
 	user := NewUserHandler(services.User)
 	token := NewTokenHandler(services.Token)
 	sms := NewSmsHandler(services.SMS, services.User)
-	agent := NewAgentHandler(services.Cert, services.SMS)
+	agent := NewAgentHandler(services.Cert, services.User, services.SMS)
 	admin := NewAdminHandler(services.Cert)
-	billing := NewBillingHandler(services.Billing)
+	billing := NewBillingHandler(services.Billing, secret)
 	userProfile := NewUserProfileHandler(services.UserProfile)
 	dict := DictionaryHandler{}
 	return &Handlers{

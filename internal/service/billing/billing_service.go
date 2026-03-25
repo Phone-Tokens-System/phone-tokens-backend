@@ -3,6 +3,7 @@ package billing
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"phone-tokens/internal/adapter/out/repository"
 	"phone-tokens/internal/model"
 	"phone-tokens/internal/service/users"
@@ -67,6 +68,7 @@ func (s *BillingService) TopDownBalance(ctx context.Context, agentID string, amo
 		if err != nil {
 			return err
 		}
+		slog.Info("agent balance", agentID, amount)
 		agent.Balance -= amount
 		if _, err := s.userRepo.UpdateAgent(ctx, tx, agent); err != nil {
 			return err

@@ -75,10 +75,10 @@ func BuildService(cfg Config) (*Services, error) {
 
 	smsAdapter := sms_aero.NewAeroService(cfg.APIEmail, cfg.APIKey) // интерфейсную развязку сюда потом
 
-	smsSvc := sms.NewSmsService(*certSvc, userProfileSvc, smsAdapter, tokenSvc, smsRepo)
-
 	billingService := billing.NewBillingService(userRepo, usageRepo, transactionRepo,
 		cfg.BillingConfig.StripeKey, cfg.BillingConfig.WebhookSecret)
+
+	smsSvc := sms.NewSmsService(*certSvc, userProfileSvc, billingService, smsAdapter, tokenSvc, smsRepo)
 
 	services := Services{
 		User:        userSvc,

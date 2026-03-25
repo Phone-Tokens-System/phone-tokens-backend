@@ -3,6 +3,7 @@ package http
 import (
 	"encoding/json"
 	"io"
+	"log/slog"
 	"net/http"
 	"phone-tokens/internal/adapter/dto"
 	"phone-tokens/internal/service/billing"
@@ -17,10 +18,8 @@ type BillingHandler struct {
 	WebhookSecret  string
 }
 
-var stripeWebhookSecret = "whsec_..." // твой webhook секрет
-
-func NewBillingHandler(billingService *billing.BillingService) *BillingHandler {
-	return &BillingHandler{BillingService: billingService}
+func NewBillingHandler(billingService *billing.BillingService, secret string) *BillingHandler {
+	return &BillingHandler{BillingService: billingService, WebhookSecret: secret}
 }
 
 // POST /create-checkout
@@ -81,22 +80,35 @@ func (h *BillingHandler) StripeWebhookHandler(w http.ResponseWriter, r *http.Req
 	payload, _ := io.ReadAll(r.Body)
 	sigHeader := r.Header.Get("Stripe-Signature")
 
-	event, err := webhook.ConstructEvent(payload, sigHeader, stripeWebhookSecret)
+	event, err := webhook.ConstructEventWithOptions(
+		payload,
+		sigHeader,
+		h.WebhookSecret,
+		webhook.ConstructEventOptions{
+			IgnoreAPIVersionMismatch: true,
+		},
+	)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		slog.Error("stripe webhook bad request error", "error", err)
 		return
 	}
 
 	if event.Type == "checkout.session.completed" {
+
 		var session stripe.CheckoutSession
 		if err := json.Unmarshal(event.Data.Raw, &session); err != nil {
+			slog.Error("stripe webhook bad request error", "error", err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
 		agentID := session.Metadata["agent_id"]
 		amount := float64(session.AmountTotal) / 100.0
-		_ = h.BillingService.TopUpBalance(r.Context(), agentID, amount)
+		err = h.BillingService.TopUpBalance(r.Context(), agentID, amount)
+		if err != nil {
+			slog.Error("stripe webhook top up balance error", "error", err)
+		}
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -112,7 +124,7 @@ func (h *BillingHandler) StripeWebhookHandler(w http.ResponseWriter, r *http.Req
 // @Param agent_id path string true "ID агента"
 // @Success 200 {object} map[string]float64 "Баланс агента"
 // @Failure 404 {object} map[string]string "Агент не найден"
-// @Router /api/v1/billing/{agent_id}/balance [get]
+// @Router /api/v1/billing/balance [get]
 func (h *BillingHandler) GetBalanceHandler(w http.ResponseWriter, r *http.Request) {
 	agentID := strings.TrimSpace(r.PathValue("agent_id"))
 	if agentID == "" {

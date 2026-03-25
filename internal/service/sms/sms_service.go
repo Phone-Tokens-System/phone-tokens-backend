@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"phone-tokens/internal/adapter/dto"
 	"phone-tokens/internal/model"
+	"phone-tokens/internal/service/billing"
 	"phone-tokens/internal/service/certificates"
 	"phone-tokens/internal/service/tokens"
 	"phone-tokens/internal/service/users"
@@ -21,13 +22,14 @@ const callBackUrl = "/api/v1/sms/receive_status"
 type SmsService struct {
 	CertificateService certificates.CertificateService
 	userProfileService *users.UserProfileService
+	BillingService     *billing.BillingService
 	SmsAdapter         SmsAdapter
 	TokenService       tokens.Service
 	Storage            Repository `json:"storage"`
 }
 
-func NewSmsService(cs certificates.CertificateService, up *users.UserProfileService, adapter SmsAdapter, tokens tokens.Service, storage Repository) *SmsService {
-	return &SmsService{cs, up, adapter, tokens, storage}
+func NewSmsService(cs certificates.CertificateService, up *users.UserProfileService, billing *billing.BillingService, adapter SmsAdapter, tokens tokens.Service, storage Repository) *SmsService {
+	return &SmsService{cs, up, billing, adapter, tokens, storage}
 }
 
 // SendSms
@@ -57,6 +59,11 @@ func (s *SmsService) SendSms(ctx context.Context, sms model.SmsRequest) (*model.
 	numberInt, err := strconv.Atoi(number)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user number from token. %w: ", err)
+	}
+
+	err = s.BillingService.TopDownBalance(ctx, agentId.String(), 8)
+	if err != nil {
+		return nil, fmt.Errorf("not enough money")
 	}
 
 	sendSms, err := s.SmsAdapter.SendSms(numberInt, sms.Text)

@@ -7,16 +7,18 @@ import (
 	"phone-tokens/internal/adapter/dto"
 	"phone-tokens/internal/service/certificates"
 	"phone-tokens/internal/service/sms"
+	"phone-tokens/internal/service/users"
 	"strconv"
 )
 
 type AgentHandler struct {
 	CertificateService *certificates.CertificateService
+	UserService        users.Service
 	SmsService         *sms.SmsService
 }
 
-func NewAgentHandler(certService *certificates.CertificateService, smsService *sms.SmsService) *AgentHandler {
-	return &AgentHandler{certService, smsService}
+func NewAgentHandler(certService *certificates.CertificateService, userService users.Service, smsService *sms.SmsService) *AgentHandler {
+	return &AgentHandler{certService, userService, smsService}
 }
 
 // UploadCSR godoc
@@ -38,7 +40,13 @@ func (h *AgentHandler) UploadCSR(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
-	agentID := agent.UserID
+	agentReal, err := h.UserService.GetAgentByUserID(r.Context(), agent.UserID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	agentID := agentReal.ID
 
 	err = r.ParseMultipartForm(1 << 20)
 	if err != nil {

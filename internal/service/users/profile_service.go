@@ -88,7 +88,7 @@ func (s *UserProfileService) GetFilteredTokensForAgent(ctx context.Context, req 
 	tokens := make([]model.UserToken, 0)
 
 	for _, profile := range profiles {
-		token, err := s.tokenRepo.GetTokensByUserId(ctx, profile.UserProfile.UserId)
+		token, err := s.tokenRepo.GetTokensByUserIdAndAgentId(ctx, profile.UserProfile.UserId, agentID)
 		if err != nil {
 			fmt.Println(err)
 			continue

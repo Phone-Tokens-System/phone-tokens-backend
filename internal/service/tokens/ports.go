@@ -19,6 +19,7 @@ type Repository interface {
 	GetNumberFromUserId(ctx context.Context, userId string) (string, error)
 	GetTokenByToken(ctx context.Context, token string) (*model.UserToken, error)
 	GetTokensByUserId(ctx context.Context, userId string) ([]model.UserToken, error)
+	GetTokensByUserIdAndAgentId(ctx context.Context, userId, agentId string) ([]model.UserToken, error)
 }
 
 type IssueInput struct {
