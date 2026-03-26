@@ -61,7 +61,7 @@ func (s *SmsService) SendSms(ctx context.Context, sms model.SmsRequest) (*model.
 		return nil, fmt.Errorf("failed to get user number from token. %w: ", err)
 	}
 
-	err = s.BillingService.TopDownBalance(ctx, agentId.String(), 8)
+	err = s.BillingService.TopDownBalance(ctx, agentId.String(), 16)
 	if err != nil {
 		return nil, fmt.Errorf("not enough money")
 	}

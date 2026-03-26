@@ -15,7 +15,7 @@ func (s *BillingService) CreateCheckoutSession(amount float64, agentID string) (
 		LineItems: []*stripe.CheckoutSessionLineItemParams{
 			{
 				PriceData: &stripe.CheckoutSessionLineItemPriceDataParams{
-					Currency: stripe.String("usd"),
+					Currency: stripe.String("rub"),
 					ProductData: &stripe.CheckoutSessionLineItemPriceDataProductDataParams{
 						Name: stripe.String("Пополнение баланса"),
 					},
