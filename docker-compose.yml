@@ -22,7 +22,6 @@ services:
   backend:
     build:
       context: .
-    container_name: app-server
     environment:
       HTTP_PORT: "${HTTP_PORT}"
       JWT_SECRET: "${JWT_SECRET}"
