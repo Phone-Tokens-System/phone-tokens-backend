@@ -21,7 +21,7 @@ type Config struct {
 func LoadConfig() (Config, error) {
 	err := godotenv.Load()
 	if err != nil {
-		return Config{}, fmt.Errorf("error loading .env file %w", err)
+		fmt.Printf("error loading .env file %v", err)
 	}
 	billingConfig := BillingConfig{
 		StripeKey:     os.Getenv("STRIPE_KEY"),

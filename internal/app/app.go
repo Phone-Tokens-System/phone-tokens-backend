@@ -3,6 +3,7 @@ package app
 import (
 	"errors"
 	"log"
+	"log/slog"
 	"phone-tokens/internal/service/billing"
 	"phone-tokens/internal/service/certificates"
 	"phone-tokens/internal/service/sms"
@@ -49,6 +50,7 @@ func BuildService(cfg Config) (*Services, error) {
 
 	log.Printf("applying database migrations with goose")
 	if err := MigrateDB(sqlDB, "database"); err != nil {
+		slog.Error("failed to migrate database", "error", err)
 		return nil, err
 	}
 
