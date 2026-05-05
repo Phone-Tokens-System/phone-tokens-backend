@@ -42,6 +42,7 @@ services:
       - frontend-static:/usr/share/nginx/html
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - ./certbot/www:/var/certbot/www:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
     ports:
       - "80:80"
       - "443:443"
