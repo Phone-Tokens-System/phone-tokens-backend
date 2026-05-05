@@ -19,7 +19,7 @@ services:
       timeout: 5s
       retries: 10
 
-  app:
+  backend:
     build:
       context: .
     container_name: app-server
@@ -29,10 +29,28 @@ services:
       JWT_EXPIRES_IN_SEC: "${JWT_EXPIRES_IN_SEC}"
       DATABASE_URL: "${DATABASE_URL}"
     ports:
-      - "8080:8080"
+      - "8080"
     depends_on:
       db:
         condition: service_healthy
 
+  frontend-builder:
+    build:
+      context: ../phone-tokens-frontend
+      dockerfile: Dockerfile
+    volumes:
+      - frontend-static:/dist
+  nginx:
+    image: nginx:stable-alpine
+    volumes:
+      - frontend-static:/usr/share/nginx/html
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+      - frontend-builder
 volumes:
   users-db-data:
+  frontend-static:
