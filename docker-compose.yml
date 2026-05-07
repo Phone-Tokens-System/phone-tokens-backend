@@ -19,6 +19,8 @@ services:
   backend:
     build:
       context: .
+    env_file:
+      .env
     environment:
       HTTP_PORT: "${HTTP_PORT}"
       JWT_SECRET: "${JWT_SECRET}"
