@@ -25,7 +25,7 @@ func (r *PackageRepository) DeletePackage(ctx context.Context, pkg *model.Packag
 
 func (r *PackageRepository) GetPackageByID(ctx context.Context, id string) (*model.Package, error) {
 	var pkg model.Package
-	err := r.db.WithContext(ctx).Find(&pkg, "id = ?", id).Error
+	err := r.db.WithContext(ctx).First(&pkg, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}

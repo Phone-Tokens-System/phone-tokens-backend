@@ -61,6 +61,8 @@ func BuildService(cfg Config) (*Services, error) {
 	certificateRepo := repository.NewCertificateRepository(db)
 	usageRepo := repository.NewUsageRepository(db)
 	transactionRepo := repository.NewTransactionRepository(db)
+	pkgRepo := repository.NewPackageRepository(db)
+	agentPkgRepo := repository.NewAgentPackageRepository(db)
 
 	userSvc := users.NewService(userRepo, users.Config{
 		JWTSecret:       cfg.JWTSecret,
@@ -78,6 +80,7 @@ func BuildService(cfg Config) (*Services, error) {
 	smsAdapter := sms_aero.NewAeroService(cfg.APIEmail, cfg.APIKey) // интерфейсную развязку сюда потом
 
 	billingService := billing.NewBillingService(userRepo, usageRepo, transactionRepo,
+		&pkgRepo, agentPkgRepo,
 		cfg.BillingConfig.StripeKey, cfg.BillingConfig.WebhookSecret)
 
 	smsSvc := sms.NewSmsService(*certSvc, userProfileSvc, billingService, smsAdapter, tokenSvc, smsRepo)

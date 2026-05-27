@@ -15,6 +15,7 @@ type Config struct {
 	DatabaseURL     string
 	APIKey          string
 	APIEmail        string
+	FrontendURL     string // e.g. "http://localhost:5173"
 	BillingConfig   BillingConfig
 }
 
@@ -29,6 +30,11 @@ func LoadConfig() (Config, error) {
 		ServerURL:     os.Getenv("SERVER_URL"),
 	}
 
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if frontendURL == "" {
+		frontendURL = "http://localhost:5173"
+	}
+
 	return Config{
 		HTTPPort:        os.Getenv("HTTP_PORT"),
 		JWTSecret:       os.Getenv("JWT_SECRET"),
@@ -36,6 +42,7 @@ func LoadConfig() (Config, error) {
 		DatabaseURL:     os.Getenv("DATABASE_URL"),
 		APIKey:          os.Getenv("API_KEY"),
 		APIEmail:        os.Getenv("EMAIL"),
+		FrontendURL:     frontendURL,
 		BillingConfig:   billingConfig,
 	}, nil
 }
