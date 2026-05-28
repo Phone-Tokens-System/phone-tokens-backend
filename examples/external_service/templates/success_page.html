@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><meta charset="utf-8"><title>Успешная привязка</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 60px auto; }
+        .card { background: #f0fff0; border: 1px solid #6c6; border-radius: 8px; padding: 20px; }
+        code { background: #eee; padding: 2px 6px; border-radius: 4px; }
+        .btn { display: inline-block; margin-top: 20px; padding: 10px 20px;
+            background: #6c47ff; color: white; border-radius: 6px;
+            text-decoration: none; }
+    </style>
+</head>
+<body>
+<h1>✅ Привязка выполнена!</h1>
+<div class="card">
+    <p>Ваш телефонный токен успешно привязан к нашему сервису.</p>
+    <p>Токен (первые 8 символов): <code>%s...</code></p>
+    <p>Привязан: <code>%s</code></p>
+    <p>Теперь мы можем отправлять вам SMS через Phone Tokens систему,
+        не зная вашего реального номера.</p>
+</div>
+<a class="btn" href="/send-test-sms?state=%s">Отправить тестовое SMS</a>
+<a class="btn" style="background:#888; margin-left:10px;" href="/">На главную</a>
+</body>
+</html>
