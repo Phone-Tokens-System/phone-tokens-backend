@@ -42,10 +42,15 @@ func (r *AgentPackageRepository) GetAgentPackagesByAgentId(ctx context.Context, 
 }
 
 func (r *AgentPackageRepository) UpdateAgentPackage(ctx context.Context, id int, pkg *model.AgentPackages) (*model.AgentPackages, error) {
+	// используем map чтобы GORM не пропускал нулевые значения (Units=0 — валидное состояние)
 	err := r.db.WithContext(ctx).
 		Model(&model.AgentPackages{}).
 		Where("id = ?", id).
-		Updates(pkg).
+		Updates(map[string]interface{}{
+			"units_total": pkg.UnitsTotal,
+			"units_used":  pkg.UnitsUsed,
+			"status":      pkg.Status,
+		}).
 		Error
 	if err != nil {
 		return nil, err
@@ -57,4 +62,12 @@ func (r *AgentPackageRepository) UpdateAgentPackage(ctx context.Context, id int,
 	}
 
 	return &updated, nil
+}
+
+func (r *AgentPackageRepository) SetPackageStatus(ctx context.Context, id int, status string) error {
+	return r.db.WithContext(ctx).
+		Model(&model.AgentPackages{}).
+		Where("id = ?", id).
+		Update("status", status).
+		Error
 }

@@ -9,6 +9,7 @@ import (
 	"phone-tokens/internal/service/users"
 	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -22,11 +23,20 @@ type BillingService struct {
 	secret          string
 }
 
-func NewBillingService(u users.Repository, us *repository.UsageRepository, t *repository.TransactionRepository, token, secret string) *BillingService {
+func NewBillingService(
+	u users.Repository,
+	us *repository.UsageRepository,
+	t *repository.TransactionRepository,
+	pkgRepo *repository.PackageRepository,
+	agentPkgRepo *repository.AgentPackageRepository,
+	token, secret string,
+) *BillingService {
 	return &BillingService{
 		userRepo:        u,
 		usageRepo:       us,
 		transactionRepo: t,
+		pkgRepo:         pkgRepo,
+		agentPkgRepo:    agentPkgRepo,
 		token:           token,
 		secret:          secret,
 	}
@@ -69,6 +79,9 @@ func (s *BillingService) TopDownBalance(ctx context.Context, agentID string, amo
 			return err
 		}
 		slog.Info("agent balance", agentID, amount)
+		if agent.Balance < amount {
+			return ErrNotEnoughBalance
+		}
 		agent.Balance -= amount
 		if _, err := s.userRepo.UpdateAgent(ctx, tx, agent); err != nil {
 			return err
@@ -131,6 +144,17 @@ func (s *BillingService) ChargeSms(ctx context.Context, userID string, cost floa
 		}
 
 		if err := s.transactionRepo.SaveTransaction(ctx, tx, txn); err != nil {
+			return err
+		}
+
+		// сохраняем usage при оплате с баланса
+		usage := &model.Usage{
+			AgentID: userID,
+			Service: model.SMS,
+			Units:   unitsUsed,
+			Cost:    cost,
+		}
+		if err := s.usageRepo.SaveUsage(ctx, tx, usage); err != nil {
 			return err
 		}
 
@@ -210,6 +234,14 @@ func (s *BillingService) AddAgentPkg(ctx context.Context, pkgId string, agentId 
 	if err != nil {
 		return err
 	}
+	if pkg.Id == (uuid.UUID{}) {
+		return errors.New("package not found")
+	}
+
+	durationDays := pkg.DurationDays
+	if durationDays <= 0 {
+		durationDays = 30 // месяц по умолчанию
+	}
 
 	err = s.TopDownBalance(ctx, agentId, pkg.Price)
 	if err != nil {
@@ -219,10 +251,11 @@ func (s *BillingService) AddAgentPkg(ctx context.Context, pkgId string, agentId 
 	pkgAgent := &model.AgentPackages{
 		AgentId:    agentId,
 		PackageId:  pkgId,
+		Service:    pkg.Service, // копируем тип сервиса из пакета
 		Status:     "ACTIVE",
-		UnitsTotal: int64(pkg.Units),
+		UnitsTotal: pkg.Units,
 		UnitsUsed:  0,
-		ExpiresAt:  time.Now().AddDate(1, 0, 0),
+		ExpiresAt:  time.Now().AddDate(0, 0, durationDays),
 	}
 	err = s.agentPkgRepo.AddAgentPackage(ctx, pkgAgent)
 	if err != nil {
@@ -251,13 +284,50 @@ func (s *BillingService) GetPackagesByAgentId(ctx context.Context, agentId strin
 	return s.agentPkgRepo.GetAgentPackagesByAgentId(ctx, agentId)
 }
 
+// GetTransactions возвращает историю транзакций агента (для раздела «Аккаунтинг»)
+func (s *BillingService) GetTransactions(ctx context.Context, agentID string) ([]model.Transaction, error) {
+	return s.transactionRepo.GetTransactionsByAgentID(ctx, agentID)
+}
+
+// CreatePackage создаёт новый тарифный пакет (вызывает администратор)
+func (s *BillingService) CreatePackage(ctx context.Context, pkg *model.Package) error {
+	if pkg.Id == (uuid.UUID{}) {
+		pkg.Id = uuid.New()
+	}
+	if pkg.DurationDays <= 0 {
+		pkg.DurationDays = 30
+	}
+	return s.pkgRepo.AddPackage(ctx, pkg)
+}
+
+// DeletePackage удаляет тарифный пакет (вызывает администратор)
+func (s *BillingService) DeletePackage(ctx context.Context, pkgId string) error {
+	pkg, err := s.pkgRepo.GetPackageByID(ctx, pkgId)
+	if err != nil {
+		return err
+	}
+	return s.pkgRepo.DeletePackage(ctx, pkg)
+}
+
 func (s *BillingService) ChargePackageForSms(ctx context.Context, agentId string, unitsUsed int) (*model.AgentPackages, error) {
 	agentPkgs, err := s.GetPackagesByAgentId(ctx, agentId)
 	if err != nil {
 		return nil, err
 	}
+	now := time.Now()
 	for _, pkg := range agentPkgs {
-		if pkg.UnitsTotal >= int64(unitsUsed) && pkg.Service == model.SMS {
+		if pkg.Service != model.SMS {
+			continue
+		}
+		if pkg.Status != "ACTIVE" {
+			continue
+		}
+		if pkg.ExpiresAt.Before(now) {
+			// пакет истёк — помечаем EXPIRED, не прерываем цикл
+			_ = s.agentPkgRepo.SetPackageStatus(ctx, pkg.Id, "EXPIRED")
+			continue
+		}
+		if pkg.UnitsTotal >= int64(unitsUsed) {
 			agentPkg, err := s.UseAgentPkg(ctx, pkg.Id, unitsUsed)
 			if err != nil {
 				return nil, err

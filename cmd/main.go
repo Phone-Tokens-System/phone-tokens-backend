@@ -26,7 +26,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to initialize sms: %v", err)
 	}
-	handlers := httpadapter.BuildHandlers(*services, cfg.BillingConfig.WebhookSecret)
+	handlers := httpadapter.BuildHandlers(*services, cfg.BillingConfig.WebhookSecret, cfg.FrontendURL)
 
 	httpServer, err := in.NewHTTPServer(cfg.HTTPPort, cfg.JWTSecret, *handlers)
 	if err != nil {

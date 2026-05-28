@@ -15,9 +15,10 @@ type Handlers struct {
 	Billing     *BillingHandler
 	UserProfile *UserProfileHandler
 	Dict        *DictionaryHandler
+	SSO         *SSOHandler
 }
 
-func BuildHandlers(services app.Services, secret string) *Handlers {
+func BuildHandlers(services app.Services, secret string, frontendURL string) *Handlers {
 	user := NewUserHandler(services.User)
 	token := NewTokenHandler(services.Token)
 	sms := NewSmsHandler(services.SMS, services.User)
@@ -26,6 +27,7 @@ func BuildHandlers(services app.Services, secret string) *Handlers {
 	billing := NewBillingHandler(services.Billing, secret)
 	userProfile := NewUserProfileHandler(services.UserProfile)
 	dict := DictionaryHandler{}
+	sso := NewSSOHandler(services.User, services.Token, frontendURL)
 	return &Handlers{
 		User:        user,
 		Token:       token,
@@ -35,6 +37,7 @@ func BuildHandlers(services app.Services, secret string) *Handlers {
 		Billing:     billing,
 		UserProfile: userProfile,
 		Dict:        &dict,
+		SSO:         sso,
 	}
 }
 

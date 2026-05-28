@@ -2,10 +2,12 @@ package http
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
 	"phone-tokens/internal/adapter/dto"
+	"phone-tokens/internal/model"
 	"phone-tokens/internal/service/billing"
 	"strings"
 
@@ -187,10 +189,103 @@ func (h *BillingHandler) BuyPackageHandler(w http.ResponseWriter, r *http.Reques
 
 	err := h.BillingService.AddAgentPkg(r.Context(), req.PkgID, agentID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		status := http.StatusInternalServerError
+		if errors.Is(err, billing.ErrNotEnoughBalance) {
+			status = http.StatusPaymentRequired
+		} else if err.Error() == "package not found" {
+			status = http.StatusNotFound
+		}
+		http.Error(w, err.Error(), status)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
+}
+
+// GetTransactionsHandler godoc
+// @Summary Получить историю транзакций агента
+// @Description Возвращает список всех транзакций (пополнений и списаний) для агента
+// @Tags Billing
+// @Accept json
+// @Produce json
+// @Param agent_id path string true "ID агента"
+// @Success 200 {array} model.Transaction
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Security BearerAuth
+// @Router /api/v1/agents/{agent_id}/transactions [get]
+func (h *BillingHandler) GetTransactionsHandler(w http.ResponseWriter, r *http.Request) {
+	agentID := r.PathValue("agent_id")
+	if agentID == "" {
+		http.Error(w, "agent_id is required", http.StatusBadRequest)
+		return
+	}
+	txns, err := h.BillingService.GetTransactions(r.Context(), agentID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, txns)
+}
+
+// CreatePackageHandler godoc
+// @Summary Создать тарифный пакет (только для администратора)
+// @Description Создаёт новый пакет (например 100 SMS в месяц за 500 руб)
+// @Tags Billing
+// @Accept json
+// @Produce json
+// @Param request body dto.CreatePackageRequest true "Данные пакета"
+// @Success 201 {object} model.Package
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Security BearerAuth
+// @Router /api/v1/admin/packages [post]
+func (h *BillingHandler) CreatePackageHandler(w http.ResponseWriter, r *http.Request) {
+	var req dto.CreatePackageRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request", http.StatusBadRequest)
+		return
+	}
+	if req.Name == "" || req.Units <= 0 || req.Price <= 0 {
+		http.Error(w, "name, units and price are required", http.StatusBadRequest)
+		return
+	}
+
+	pkg := &model.Package{
+		Name:         req.Name,
+		Service:      model.ServiceType(req.Service),
+		Units:        req.Units,
+		Price:        req.Price,
+		DurationDays: req.DurationDays,
+		Description:  req.Description,
+	}
+
+	if err := h.BillingService.CreatePackage(r.Context(), pkg); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusCreated, pkg)
+}
+
+// DeletePackageHandler godoc
+// @Summary Удалить тарифный пакет (только для администратора)
+// @Description Удаляет пакет по ID
+// @Tags Billing
+// @Param pkg_id path string true "ID пакета"
+// @Success 204 "Пакет удалён"
+// @Failure 404 {object} map[string]string
+// @Security BearerAuth
+// @Router /api/v1/admin/packages/{pkg_id} [delete]
+func (h *BillingHandler) DeletePackageHandler(w http.ResponseWriter, r *http.Request) {
+	pkgID := r.PathValue("pkg_id")
+	if pkgID == "" {
+		http.Error(w, "pkg_id is required", http.StatusBadRequest)
+		return
+	}
+	if err := h.BillingService.DeletePackage(r.Context(), pkgID); err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // SeeAgentPackagesHandler godoc

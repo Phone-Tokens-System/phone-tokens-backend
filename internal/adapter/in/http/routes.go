@@ -72,6 +72,26 @@ func RegisterRoutes(mux *http.ServeMux, h Handlers, authCfg AuthConfig) {
 	mux.Handle("GET /api/v1/billing/{agent_id}/balance", authMiddleware(http.HandlerFunc(h.Billing.GetBalanceHandler)))
 	mux.Handle("GET /api/v1/billing/balance", authMiddleware(http.HandlerFunc(h.Billing.GetBalanceHandler)))
 
+	// accounting (agent transaction history)
+	mux.Handle("GET /api/v1/agents/{agent_id}/transactions", authMiddleware(RequireRole("agent", http.HandlerFunc(h.Billing.GetTransactionsHandler))))
+
+	// packages
+	mux.Handle("GET /api/v1/packages", authMiddleware(http.HandlerFunc(h.Billing.SeePackageOptionsHandler)))
+	mux.Handle("POST /api/v1/agents/{agent_id}/packages", authMiddleware(RequireRole("agent", http.HandlerFunc(h.Billing.BuyPackageHandler))))
+	mux.Handle("GET /api/v1/agents/{agent_id}/packages", authMiddleware(RequireRole("agent", http.HandlerFunc(h.Billing.SeeAgentPackagesHandler))))
+
+	// admin: управление пакетами
+	mux.Handle("POST /api/v1/admin/packages", authMiddleware(RequireRole("admin", http.HandlerFunc(h.Billing.CreatePackageHandler))))
+	mux.Handle("DELETE /api/v1/admin/packages/{pkg_id}", authMiddleware(RequireRole("admin", http.HandlerFunc(h.Billing.DeletePackageHandler))))
+
+	// SSO — привязка токена пользователя к внешнему агенту
+	// GET  /api/v1/sso/authorize  — агент перенаправляет сюда пользователя (без auth)
+	// POST /api/v1/sso/complete   — frontend вызывает после логина пользователя (требует user JWT)
+	// GET  /api/v1/sso/me         — агент проверяет валидность полученного токена (без auth)
+	mux.HandleFunc("GET /api/v1/sso/authorize", h.SSO.Authorize)
+	mux.Handle("POST /api/v1/sso/complete", authMiddleware(RequireRole("user", http.HandlerFunc(h.SSO.Complete))))
+	mux.HandleFunc("GET /api/v1/sso/me", h.SSO.Me)
+
 	//dict
 	mux.Handle("GET /api/v1/dictionary/countries", http.HandlerFunc(h.Dict.GetCountries))
 	mux.Handle("GET /api/v1/dictionary/regions", http.HandlerFunc(h.Dict.GetRegions))
