@@ -28,7 +28,7 @@ func main() {
 	}
 	handlers := httpadapter.BuildHandlers(*services, cfg.BillingConfig.WebhookSecret, cfg.FrontendURL)
 
-	httpServer, err := in.NewHTTPServer(cfg.HTTPPort, cfg.JWTSecret, *handlers)
+	httpServer, err := in.NewHTTPServer(cfg.HTTPPort, cfg.JWTSecret, cfg.FrontendURL, *handlers)
 	if err != nil {
 		log.Fatalf("failed to initialize HTTP server: %v", err)
 	}

@@ -21,8 +21,6 @@ COPY --from=builder /app/docs ./docs
 
 COPY --from=builder /app/database ./database
 
-COPY --from=builder /app/cert.pem .
-COPY --from=builder /app/key.pem .
 EXPOSE 8080
 
 CMD ["./main"]

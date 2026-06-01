@@ -6,8 +6,6 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-    ports:
-      - "5432:5432"
     volumes:
       - users-db-data:/var/lib/postgresql/data
     healthcheck:
@@ -26,6 +24,9 @@ services:
       JWT_SECRET: "${JWT_SECRET}"
       JWT_EXPIRES_IN_SEC: "${JWT_EXPIRES_IN_SEC}"
       DATABASE_URL: "${DATABASE_URL}"
+    volumes:
+      - ${CA_CERT_PATH:-./cert.pem}:/app/cert.pem:ro
+      - ${CA_KEY_PATH:-./key.pem}:/app/key.pem:ro
     ports:
       - "8080"
     depends_on:

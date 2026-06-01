@@ -1,2 +1,7 @@
 certbot/
 .git
+.env
+*.env
+*.pem
+*.key
+*.csr
