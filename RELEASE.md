@@ -13,8 +13,6 @@
 - SSO-сценарий привязки пользовательского токена к внешнему агенту;
 - frontend static build, backend Docker image и Docker Compose конфигурация.
 
-Текущий статус релиза: `No-Go`. Передача в эксплуатацию запрещена до закрытия backend test blocker.
-
 ## 2. Release Gate
 
 | Gate | Команда или проверка | Текущий статус |
