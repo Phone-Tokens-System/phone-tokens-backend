@@ -7,7 +7,7 @@ import (
 )
 
 // NewHTTPServer создаёт HTTP‑сервер поверх доменного сервиса.
-func NewHTTPServer(httpPort string, jwtSecret string, handlers httpadapter.Handlers) (*http.Server, error) {
+func NewHTTPServer(httpPort string, jwtSecret string, allowedOrigin string, handlers httpadapter.Handlers) (*http.Server, error) {
 	if httpPort == "" {
 		return nil, errors.New("HTTP_PORT is required")
 	}
@@ -16,7 +16,9 @@ func NewHTTPServer(httpPort string, jwtSecret string, handlers httpadapter.Handl
 	httpadapter.RegisterRoutes(mux, handlers, httpadapter.AuthConfig{
 		JWTSecret: jwtSecret,
 	})
-	handler := httpadapter.CORSMiddleware(mux)
+	handler := httpadapter.CORSMiddleware(mux, httpadapter.CORSConfig{
+		AllowedOrigins: []string{allowedOrigin},
+	})
 
 	server := &http.Server{
 		Addr:    ":" + httpPort,

@@ -18,17 +18,40 @@ type AuthConfig struct {
 	JWTSecret string
 }
 
+type CORSConfig struct {
+	AllowedOrigins []string
+}
+
 type UserClaims struct {
 	UserID string
 	Phone  string
 	Role   model.Role
 }
 
-func CORSMiddleware(next http.Handler) http.Handler {
+func CORSMiddleware(next http.Handler, cfg CORSConfig) http.Handler {
+	allowedOrigins := make(map[string]struct{}, len(cfg.AllowedOrigins))
+	for _, origin := range cfg.AllowedOrigins {
+		origin = strings.TrimSpace(origin)
+		if origin != "" {
+			allowedOrigins[origin] = struct{}{}
+		}
+	}
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		origin := r.Header.Get("Origin")
+		if origin != "" {
+			if _, ok := allowedOrigins[origin]; !ok {
+				if r.Method == http.MethodOptions {
+					http.Error(w, "cors origin is not allowed", http.StatusForbidden)
+					return
+				}
+			} else {
+				w.Header().Set("Access-Control-Allow-Origin", origin)
+				w.Header().Set("Vary", "Origin")
+				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+				w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			}
+		}
 
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
