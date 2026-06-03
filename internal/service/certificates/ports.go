@@ -13,4 +13,5 @@ type Repository interface {
 	GetCsrRequests(ctx context.Context) ([]model.CsrRequest, error)
 	SaveCertificateInfo(ctx context.Context, info model.CertificateInfo) error
 	GetCertificateInfo(ctx context.Context, csrID int) (*model.CertificateInfo, error)
+	GetActiveCertificateInfoByAgentID(ctx context.Context, agentID string) (*model.CertificateInfo, error)
 }

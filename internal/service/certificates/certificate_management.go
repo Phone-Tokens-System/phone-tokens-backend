@@ -116,6 +116,14 @@ func (s *CertificateService) parseKeyFromPem(keyFile []byte) (*ecdsa.PrivateKey,
 	}
 	return key, nil
 }
+
+func firstSubjectValue(values []string) string {
+	if len(values) == 0 {
+		return ""
+	}
+	return values[0]
+}
+
 func (s *CertificateService) signCertificateForAgent(ctx context.Context, csr *model.CsrRequest) (*bytes.Buffer, error) {
 	block := csr.CSR
 
@@ -177,7 +185,7 @@ func (s *CertificateService) signCertificateForAgent(ctx context.Context, csr *m
 	})
 
 	agentInfo := model.CertificateInfo{
-		OrganizationID: CSR.Subject.Organization[0],
+		OrganizationID: firstSubjectValue(CSR.Subject.Organization),
 		CertificatePem: certPem.Bytes(),
 		IsActive:       true,
 		CsrID:          csr.ID,

@@ -92,6 +92,11 @@ func (h *AdminHandler) ShowCSRRequests(w http.ResponseWriter, r *http.Request) {
 func (h *AdminHandler) ApproveCSRRequest(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
 	idInt, err := strconv.Atoi(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	request, err := h.CertificateService.ApproveCertificateRequest(r.Context(), idInt)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

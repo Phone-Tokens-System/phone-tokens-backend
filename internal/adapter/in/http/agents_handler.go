@@ -2,13 +2,17 @@ package http
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"phone-tokens/internal/adapter/dto"
+	"phone-tokens/internal/model"
 	"phone-tokens/internal/service/certificates"
 	"phone-tokens/internal/service/sms"
 	"phone-tokens/internal/service/users"
 	"strconv"
+
+	"gorm.io/gorm"
 )
 
 type AgentHandler struct {
@@ -106,8 +110,29 @@ func (h *AgentHandler) GetSignedCertificate(w http.ResponseWriter, r *http.Reque
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	cert, err := h.CertificateService.GetSignedCertificateByCsrID(r.Context(), idInt)
+
+	agent, err := GetUserFromContext(r.Context())
 	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	agentReal, err := h.UserService.GetAgentByUserID(r.Context(), agent.UserID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	cert, err := h.CertificateService.GetSignedCertificateByCsrIDForAgent(r.Context(), idInt, agentReal.ID)
+	if err != nil {
+		if errors.Is(err, model.ErrForbidden) {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, "signed certificate not found", http.StatusNotFound)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -120,6 +145,49 @@ func (h *AgentHandler) GetSignedCertificate(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+}
+
+// GetCurrentSignedCertificate godoc
+// @Summary Get current signed certificate for authenticated agent
+// @Description Returns the active signed certificate for the authenticated agent after admin approval
+// @Tags CSR
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} dto.CertificateResponse "Signed certificate"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 404 {object} map[string]string "Certificate not found"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /api/v1/csr/signed/current [get]
+func (h *AgentHandler) GetCurrentSignedCertificate(w http.ResponseWriter, r *http.Request) {
+	agent, err := GetUserFromContext(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	agentReal, err := h.UserService.GetAgentByUserID(r.Context(), agent.UserID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	cert, err := h.CertificateService.GetActiveSignedCertificateByAgentID(r.Context(), agentReal.ID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, "signed certificate not found", http.StatusNotFound)
+			return
+		}
+
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	resp := dto.CertificateResponse{
+		Certificate: string(cert.CertificatePem),
+		CsrId:       cert.CsrID,
+	}
+	writeJSON(w, http.StatusOK, resp)
 }
 
 // SeeSMSLogs godoc

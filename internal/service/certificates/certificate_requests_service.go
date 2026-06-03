@@ -22,11 +22,6 @@ func (s *CertificateService) AcceptCertificateRequest(ctx context.Context, reque
 }
 
 func (s *CertificateService) ApproveCertificateRequest(ctx context.Context, ID int) (*model.CsrRequest, error) {
-	err := s.Storage.UpdateCsrStatus(ctx, ID, "APPROVED")
-	if err != nil {
-		return nil, err
-	}
-
 	csr, err := s.Storage.GetCsrRequest(ctx, ID)
 	if err != nil {
 		return nil, err
@@ -34,8 +29,15 @@ func (s *CertificateService) ApproveCertificateRequest(ctx context.Context, ID i
 
 	_, err = s.signCertificateForAgent(ctx, csr)
 	if err != nil {
+		_ = s.Storage.UpdateCsrStatus(ctx, ID, "SIGN_FAILED")
 		return nil, err
 	}
+
+	err = s.Storage.UpdateCsrStatus(ctx, ID, "APPROVED")
+	if err != nil {
+		return nil, err
+	}
+	csr.Status = "APPROVED"
 	return csr, nil
 }
 
