@@ -24,9 +24,9 @@ func (s *BillingService) CreateCheckoutSession(amount float64, agentID string) (
 				Quantity: stripe.Int64(1),
 			},
 		},
-		SuccessURL: stripe.String("http://localhost:5173/success?agent=" + agentID + "&amount=" +
+		SuccessURL: stripe.String(s.frontendURL + "/success?agent=" + agentID + "&amount=" +
 			fmt.Sprintf("%.2f", amount)),
-		CancelURL: stripe.String("http://localhost:5173/cancel"),
+		CancelURL: stripe.String(s.frontendURL + "/cancel"),
 	}
 	params.AddMetadata("agent_id", agentID)
 

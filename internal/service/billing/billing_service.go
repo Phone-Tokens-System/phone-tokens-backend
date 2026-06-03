@@ -21,6 +21,7 @@ type BillingService struct {
 	agentPkgRepo    *repository.AgentPackageRepository
 	token           string
 	secret          string
+	frontendURL     string
 }
 
 func NewBillingService(
@@ -29,7 +30,7 @@ func NewBillingService(
 	t *repository.TransactionRepository,
 	pkgRepo *repository.PackageRepository,
 	agentPkgRepo *repository.AgentPackageRepository,
-	token, secret string,
+	token, secret, frontendURL string,
 ) *BillingService {
 	return &BillingService{
 		userRepo:        u,
@@ -39,6 +40,7 @@ func NewBillingService(
 		agentPkgRepo:    agentPkgRepo,
 		token:           token,
 		secret:          secret,
+		frontendURL:     frontendURL,
 	}
 }
 

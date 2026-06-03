@@ -81,7 +81,7 @@ func BuildService(cfg Config) (*Services, error) {
 
 	billingService := billing.NewBillingService(userRepo, usageRepo, transactionRepo,
 		&pkgRepo, agentPkgRepo,
-		cfg.BillingConfig.StripeKey, cfg.BillingConfig.WebhookSecret)
+		cfg.BillingConfig.StripeKey, cfg.BillingConfig.WebhookSecret, cfg.FrontendURL)
 
 	smsSvc := sms.NewSmsService(*certSvc, userProfileSvc, billingService, smsAdapter, tokenSvc, smsRepo)
 
