@@ -55,6 +55,14 @@ func (r *TokenRepository) GetTokensByUserIdAndAgentId(ctx context.Context, userI
 	return token, nil
 }
 
+func (r *TokenRepository) GetTokensByAgentId(ctx context.Context, agentId string) ([]model.UserToken, error) {
+	var result []model.UserToken
+	if err := r.db.WithContext(ctx).Where("agent_id = ?", agentId).Find(&result).Error; err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
 func (r *TokenRepository) UpdateToken(ctx context.Context, token *model.UserToken) (*model.UserToken, error) {
 	var updatedToken model.UserToken
 	result := r.db.WithContext(ctx).

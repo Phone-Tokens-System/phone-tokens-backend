@@ -264,3 +264,7 @@ func (s *service) GetTokensByUser(ctx context.Context, userID string) ([]model.U
 	}
 	return tokens, nil
 }
+
+func (s *service) GetTokensByAgent(ctx context.Context, agentID string) ([]model.UserToken, error) {
+	return s.repo.GetTokensByAgentId(ctx, agentID)
+}

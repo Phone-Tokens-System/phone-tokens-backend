@@ -40,6 +40,10 @@ func RegisterRoutes(mux *http.ServeMux, h Handlers, authCfg AuthConfig) {
 	mux.Handle("PUT /api/v1/user-profile", authMiddleware(RequireRole("user", http.HandlerFunc(h.UserProfile.UpdateUserProfile))))
 	mux.Handle("GET /api/v1/user-profile/me", authMiddleware(RequireRole("user", http.HandlerFunc(h.UserProfile.GetUserProfileById))))
 
+	// agents — токены, доступные агенту для отправки SMS
+	// GET /api/v1/agents/{agentId}/tokens — список UserToken, привязанных к данному агенту
+	mux.Handle("GET /api/v1/agents/{agentId}/tokens", authMiddleware(RequireRole("agent", http.HandlerFunc(h.Token.GetTokensByAgent))))
+
 	// agents
 	mux.Handle("GET /api/v1/csr/signed/current", authMiddleware(RequireRole("agent", http.HandlerFunc(h.Agent.GetCurrentSignedCertificate))))
 	mux.Handle("GET /api/v1/csr/signed", authMiddleware(RequireRole("agent", http.HandlerFunc(h.Agent.GetSignedCertificate))))

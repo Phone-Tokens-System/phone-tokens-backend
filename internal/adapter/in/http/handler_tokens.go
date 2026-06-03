@@ -317,6 +317,46 @@ func (h *TokenHandler) BindAgentToToken(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+// GetTokensByAgent godoc
+// @Summary      Получить токены по агенту
+// @Description  Возвращает все UserToken, привязанные к данному агенту.
+//               Агент вызывает этот endpoint чтобы получить список клиентов,
+//               которым он может отправлять SMS.
+//               Агент получает только свои токены: agent_id берётся из JWT, не из пути.
+// @Security BearerAuth
+// @Tags         Token
+// @Produce      json
+// @Success      200  {array}   tokenResponse
+// @Failure      401  {string}  string  "unauthorized"
+// @Failure      500  {string}  string  "internal server error"
+// @Router       /api/v1/agents/tokens [get]
+func (h *TokenHandler) GetTokensByAgent(w http.ResponseWriter, r *http.Request) {
+	claims, ok := r.Context().Value(userContextKey).(*UserClaims)
+	if !ok || claims.UserID == "" {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// agent_id берётся из path (для просмотра со стороны агента)
+	agentID := r.PathValue("agentId")
+	if agentID == "" {
+		http.Error(w, "agentId is required", http.StatusBadRequest)
+		return
+	}
+
+	userTokens, err := h.service.GetTokensByAgent(r.Context(), agentID)
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	resp := make([]tokenResponse, 0, len(userTokens))
+	for _, t := range userTokens {
+		resp = append(resp, toTokenResponse(&t))
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
 // GetTokensByUser godoc
 // @Summary      Get tokens by user
 // @Description  Получение токенов пользователя
