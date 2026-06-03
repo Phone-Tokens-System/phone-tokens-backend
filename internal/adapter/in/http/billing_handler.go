@@ -79,8 +79,15 @@ func (h *BillingHandler) TopBalance(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 "Некорректный payload или подпись"
 // @Router /api/v1/billing/webhook [post]
 func (h *BillingHandler) StripeWebhookHandler(w http.ResponseWriter, r *http.Request) {
-	payload, _ := io.ReadAll(r.Body)
+	payload, err := io.ReadAll(r.Body)
+	if err != nil {
+		slog.Error("stripe webhook: failed to read body", "error", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	sigHeader := r.Header.Get("Stripe-Signature")
+	slog.Info("stripe webhook: received", "sig_present", sigHeader != "", "payload_bytes", len(payload), "secret_len", len(h.WebhookSecret))
 
 	event, err := webhook.ConstructEventWithOptions(
 		payload,
@@ -91,26 +98,33 @@ func (h *BillingHandler) StripeWebhookHandler(w http.ResponseWriter, r *http.Req
 		},
 	)
 	if err != nil {
+		slog.Error("stripe webhook: signature verification failed", "error", err, "secret_len", len(h.WebhookSecret))
 		w.WriteHeader(http.StatusBadRequest)
-		slog.Error("stripe webhook bad request error", "error", err)
 		return
 	}
 
-	if event.Type == "checkout.session.completed" {
+	slog.Info("stripe webhook: event received", "type", event.Type)
 
+	if event.Type == "checkout.session.completed" {
 		var session stripe.CheckoutSession
 		if err := json.Unmarshal(event.Data.Raw, &session); err != nil {
-			slog.Error("stripe webhook bad request error", "error", err)
+			slog.Error("stripe webhook: failed to unmarshal session", "error", err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
 		agentID := session.Metadata["agent_id"]
 		amount := float64(session.AmountTotal) / 100.0
-		err = h.BillingService.TopUpBalance(r.Context(), agentID, amount)
-		if err != nil {
-			slog.Error("stripe webhook top up balance error", "error", err)
+		slog.Info("stripe webhook: topping up balance", "agent_id", agentID, "amount", amount, "payment_status", session.PaymentStatus)
+
+		if err = h.BillingService.TopUpBalance(r.Context(), agentID, amount); err != nil {
+			slog.Error("stripe webhook: top up balance failed", "agent_id", agentID, "amount", amount, "error", err)
+			// Возвращаем 200 чтобы Stripe не повторял запрос бесконечно
+			w.WriteHeader(http.StatusOK)
+			return
 		}
+
+		slog.Info("stripe webhook: balance topped up successfully", "agent_id", agentID, "amount", amount)
 	}
 
 	w.WriteHeader(http.StatusOK)
