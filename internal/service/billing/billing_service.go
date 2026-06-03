@@ -251,13 +251,13 @@ func (s *BillingService) AddAgentPkg(ctx context.Context, pkgId string, agentId 
 	}
 
 	pkgAgent := &model.AgentPackages{
-		AgentId:    agentId,
-		PackageId:  pkgId,
-		Service:    pkg.Service, // копируем тип сервиса из пакета
-		Status:     "ACTIVE",
-		UnitsTotal: pkg.Units,
-		UnitsUsed:  0,
-		ExpiresAt:  time.Now().AddDate(0, 0, durationDays),
+		AgentId:     agentId,
+		PackageId:   pkgId,
+		ServiceType: pkg.Service, // копируем тип сервиса из пакета
+		Status:      "ACTIVE",
+		UnitsTotal:  pkg.Units,
+		UnitsUsed:   0,
+		ExpiresAt:   time.Now().AddDate(0, 0, durationDays),
 	}
 	err = s.agentPkgRepo.AddAgentPackage(ctx, pkgAgent)
 	if err != nil {
@@ -318,7 +318,7 @@ func (s *BillingService) ChargePackageForSms(ctx context.Context, agentId string
 	}
 	now := time.Now()
 	for _, pkg := range agentPkgs {
-		if pkg.Service != model.SMS {
+		if pkg.ServiceType != model.SMS {
 			continue
 		}
 		if pkg.Status != "ACTIVE" {
