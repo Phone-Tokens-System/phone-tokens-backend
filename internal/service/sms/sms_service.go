@@ -46,7 +46,6 @@ func (s *SmsService) SendSms(ctx context.Context, sms model.SmsRequest) (*model.
 	}
 
 	res, err := s.TokenService.CheckTokenPermission(ctx, sms.ClientToken, agentId, model.TokenPermissionSMS)
-	res = true
 	if !res {
 		return nil, fmt.Errorf("permission denied")
 	}
