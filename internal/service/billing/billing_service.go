@@ -62,11 +62,9 @@ func (s *BillingService) TopUpBalance(ctx context.Context, agentID string, amoun
 			Amount:  amount,
 			Type:    model.Credit,
 		}
-
 		if err := s.transactionRepo.SaveTransaction(ctx, tx, txn); err != nil {
 			return err
 		}
-
 		return nil
 	})
 }
@@ -93,74 +91,63 @@ func (s *BillingService) TopDownBalance(ctx context.Context, agentID string, amo
 			Amount:  amount,
 			Type:    model.Debit,
 		}
-
 		if err := s.transactionRepo.SaveTransaction(ctx, tx, txn); err != nil {
 			return err
 		}
-
 		return nil
 	})
 }
 
-// списание за SMS
-// сначала пытаемся снять из пакетов агента, далее с его баланса
+// ChargeSms — списание за SMS.
+// Сначала пытаемся снять из пакетов агента, при их отсутствии — с баланса.
+// Всё (списание единиц пакета / баланса + сохранение usage) атомарно в одной транзакции.
 func (s *BillingService) ChargeSms(ctx context.Context, userID string, cost float64, unitsUsed int) error {
 	return s.userRepo.WithTransaction(ctx, func(tx *gorm.DB) error {
-		_, err := s.ChargePackageForSms(ctx, userID, unitsUsed)
+		pkg, err := s.chargePackageForSmsTx(ctx, tx, userID, unitsUsed)
 		if err == nil {
+			// пакет списан — сохраняем usage с нулевой денежной стоимостью
+			_ = pkg // подавляем предупреждение компилятора
 			usage := &model.Usage{
 				AgentID: userID,
 				Service: model.SMS,
 				Units:   unitsUsed,
 				Cost:    0,
 			}
-			if err = s.usageRepo.SaveUsage(ctx, tx, usage); err != nil {
-				return err
-			}
-			return nil
+			return s.usageRepo.SaveUsage(ctx, tx, usage)
 		}
 
 		if !errors.Is(err, ErrNoPackageUnitsLeft) {
 			return err
 		}
 
+		// пакетов нет — списываем с денежного баланса
 		agent, err := s.userRepo.GetAgentForUpdate(ctx, tx, userID)
 		if err != nil {
 			return err
 		}
-
 		if agent.Balance < cost {
 			return errors.New("insufficient balance")
 		}
-
 		agent.Balance -= cost
 		if _, err := s.userRepo.UpdateAgent(ctx, tx, agent); err != nil {
 			return err
 		}
-
 		txn := &model.Transaction{
 			AgentID: userID,
 			Amount:  cost,
 			Type:    model.Debit,
 			Service: model.SMS,
 		}
-
 		if err := s.transactionRepo.SaveTransaction(ctx, tx, txn); err != nil {
 			return err
 		}
-
-		// сохраняем usage при оплате с баланса
 		usage := &model.Usage{
 			AgentID: userID,
 			Service: model.SMS,
 			Units:   unitsUsed,
 			Cost:    cost,
 		}
-		if err := s.usageRepo.SaveUsage(ctx, tx, usage); err != nil {
-			return err
-		}
-
-		return nil
+		return s.usageRepo.SaveUsage(ctx, tx, usage)
 	})
 }
 
@@ -172,16 +159,13 @@ func (s *BillingService) ChargeCall(ctx context.Context, userID string, costPerM
 		if err != nil {
 			return err
 		}
-
 		if agent.Balance < totalCost {
 			return errors.New("insufficient balance")
 		}
-
 		agent.Balance -= totalCost
 		if _, err := s.userRepo.UpdateAgent(ctx, tx, agent); err != nil {
 			return err
 		}
-
 		usage := &model.Usage{
 			AgentID: userID,
 			Service: "call",
@@ -191,18 +175,13 @@ func (s *BillingService) ChargeCall(ctx context.Context, userID string, costPerM
 		if err = s.usageRepo.SaveUsage(ctx, tx, usage); err != nil {
 			return err
 		}
-
 		txn := &model.Transaction{
 			AgentID: userID,
 			Amount:  totalCost,
 			Type:    model.Debit,
 			Service: model.Call,
 		}
-		if err = s.transactionRepo.SaveTransaction(ctx, tx, txn); err != nil {
-			return err
-		}
-
-		return nil
+		return s.transactionRepo.SaveTransaction(ctx, tx, txn)
 	})
 }
 
@@ -211,7 +190,6 @@ func (s *BillingService) GetBalance(ctx context.Context, agentID string) (float6
 	if err != nil {
 		return 0, err
 	}
-
 	var balance float64
 	for _, t := range transactions {
 		switch t.Type {
@@ -221,16 +199,17 @@ func (s *BillingService) GetBalance(ctx context.Context, agentID string) (float6
 			balance -= t.Amount
 		}
 	}
-
 	return balance, nil
 }
 
-// показать все доступные пакеты (100 смс в месяц, 10 смс)
+// показать все доступные пакеты
 func (s *BillingService) GetPackages(ctx context.Context) ([]model.Package, error) {
 	return s.pkgRepo.GetPackages(ctx)
 }
 
-// AddAgentPkg agent buys new package
+// AddAgentPkg — покупка пакета агентом.
+// Атомарно: списание баланса + запись транзакции + создание agent_package.
+// Если любой шаг провалится — вся операция откатывается.
 func (s *BillingService) AddAgentPkg(ctx context.Context, pkgId string, agentId string) error {
 	pkg, err := s.pkgRepo.GetPackageByID(ctx, pkgId)
 	if err != nil {
@@ -242,31 +221,50 @@ func (s *BillingService) AddAgentPkg(ctx context.Context, pkgId string, agentId 
 
 	durationDays := pkg.DurationDays
 	if durationDays <= 0 {
-		durationDays = 30 // месяц по умолчанию
+		durationDays = 30
 	}
 
-	err = s.TopDownBalance(ctx, agentId, pkg.Price)
-	if err != nil {
-		return err
-	}
+	return s.userRepo.WithTransaction(ctx, func(tx *gorm.DB) error {
+		// 1. Получаем агента с блокировкой строки
+		agent, err := s.userRepo.GetAgentForUpdate(ctx, tx, agentId)
+		if err != nil {
+			return err
+		}
+		if agent.Balance < pkg.Price {
+			return ErrNotEnoughBalance
+		}
 
-	pkgAgent := &model.AgentPackages{
-		AgentId:     agentId,
-		PackageId:   pkgId,
-		ServiceType: pkg.Service, // копируем тип сервиса из пакета
-		Status:      "ACTIVE",
-		UnitsTotal:  pkg.Units,
-		UnitsUsed:   0,
-		ExpiresAt:   time.Now().AddDate(0, 0, durationDays),
-	}
-	err = s.agentPkgRepo.AddAgentPackage(ctx, pkgAgent)
-	if err != nil {
-		return err
-	}
-	return nil
+		// 2. Списываем баланс
+		agent.Balance -= pkg.Price
+		if _, err := s.userRepo.UpdateAgent(ctx, tx, agent); err != nil {
+			return err
+		}
+
+		// 3. Сохраняем транзакцию
+		txn := &model.Transaction{
+			AgentID: agentId,
+			Amount:  pkg.Price,
+			Type:    model.Debit,
+		}
+		if err := s.transactionRepo.SaveTransaction(ctx, tx, txn); err != nil {
+			return err
+		}
+
+		// 4. Создаём запись пакета агента
+		pkgAgent := &model.AgentPackages{
+			AgentId:     agentId,
+			PackageId:   pkgId,
+			ServiceType: pkg.Service,
+			Status:      "ACTIVE",
+			UnitsTotal:  pkg.Units,
+			UnitsUsed:   0,
+			ExpiresAt:   time.Now().AddDate(0, 0, durationDays),
+		}
+		return s.agentPkgRepo.AddAgentPackageTx(ctx, tx, pkgAgent)
+	})
 }
 
-// UseAgentPkg agent uses units of package
+// UseAgentPkg — публичный метод для внешних вызовов (без транзакции).
 func (s *BillingService) UseAgentPkg(ctx context.Context, agentPkgId int, unitsUsed int) (*model.AgentPackages, error) {
 	pkg, err := s.agentPkgRepo.GetAgentPackageById(ctx, agentPkgId)
 	if err != nil {
@@ -274,24 +272,31 @@ func (s *BillingService) UseAgentPkg(ctx context.Context, agentPkgId int, unitsU
 	}
 	pkg.UnitsUsed += int64(unitsUsed)
 	pkg.UnitsTotal -= int64(unitsUsed)
-	newPkg, err := s.agentPkgRepo.UpdateAgentPackage(ctx, agentPkgId, pkg)
+	return s.agentPkgRepo.UpdateAgentPackage(ctx, agentPkgId, pkg)
+}
+
+// useAgentPkgTx — списание единиц пакета внутри существующей транзакции.
+func (s *BillingService) useAgentPkgTx(ctx context.Context, tx *gorm.DB, agentPkgId int, unitsUsed int) (*model.AgentPackages, error) {
+	pkg, err := s.agentPkgRepo.GetAgentPackageByIdTx(ctx, tx, agentPkgId)
 	if err != nil {
 		return nil, err
 	}
-	return newPkg, nil
+	pkg.UnitsUsed += int64(unitsUsed)
+	pkg.UnitsTotal -= int64(unitsUsed)
+	return s.agentPkgRepo.UpdateAgentPackageTx(ctx, tx, agentPkgId, pkg)
 }
 
-// GetPackagesByAgentId Get all packages agent owns
+// GetPackagesByAgentId — все пакеты агента.
 func (s *BillingService) GetPackagesByAgentId(ctx context.Context, agentId string) ([]model.AgentPackages, error) {
 	return s.agentPkgRepo.GetAgentPackagesByAgentId(ctx, agentId)
 }
 
-// GetTransactions возвращает историю транзакций агента (для раздела «Аккаунтинг»)
+// GetTransactions — история транзакций агента.
 func (s *BillingService) GetTransactions(ctx context.Context, agentID string) ([]model.Transaction, error) {
 	return s.transactionRepo.GetTransactionsByAgentID(ctx, agentID)
 }
 
-// CreatePackage создаёт новый тарифный пакет (вызывает администратор)
+// CreatePackage — создание тарифного пакета (администратор).
 func (s *BillingService) CreatePackage(ctx context.Context, pkg *model.Package) error {
 	if pkg.Id == (uuid.UUID{}) {
 		pkg.Id = uuid.New()
@@ -302,7 +307,7 @@ func (s *BillingService) CreatePackage(ctx context.Context, pkg *model.Package) 
 	return s.pkgRepo.AddPackage(ctx, pkg)
 }
 
-// DeletePackage удаляет тарифный пакет (вызывает администратор)
+// DeletePackage — удаление тарифного пакета (администратор).
 func (s *BillingService) DeletePackage(ctx context.Context, pkgId string) error {
 	pkg, err := s.pkgRepo.GetPackageByID(ctx, pkgId)
 	if err != nil {
@@ -311,6 +316,7 @@ func (s *BillingService) DeletePackage(ctx context.Context, pkgId string) error 
 	return s.pkgRepo.DeletePackage(ctx, pkg)
 }
 
+// ChargePackageForSms — публичный метод, используется снаружи (без tx).
 func (s *BillingService) ChargePackageForSms(ctx context.Context, agentId string, unitsUsed int) (*model.AgentPackages, error) {
 	agentPkgs, err := s.GetPackagesByAgentId(ctx, agentId)
 	if err != nil {
@@ -325,16 +331,36 @@ func (s *BillingService) ChargePackageForSms(ctx context.Context, agentId string
 			continue
 		}
 		if pkg.ExpiresAt.Before(now) {
-			// пакет истёк — помечаем EXPIRED, не прерываем цикл
 			_ = s.agentPkgRepo.SetPackageStatus(ctx, pkg.Id, "EXPIRED")
 			continue
 		}
 		if pkg.UnitsTotal >= int64(unitsUsed) {
-			agentPkg, err := s.UseAgentPkg(ctx, pkg.Id, unitsUsed)
-			if err != nil {
-				return nil, err
-			}
-			return agentPkg, nil
+			return s.UseAgentPkg(ctx, pkg.Id, unitsUsed)
+		}
+	}
+	return nil, ErrNoPackageUnitsLeft
+}
+
+// chargePackageForSmsTx — то же, но внутри переданной транзакции.
+func (s *BillingService) chargePackageForSmsTx(ctx context.Context, tx *gorm.DB, agentId string, unitsUsed int) (*model.AgentPackages, error) {
+	agentPkgs, err := s.GetPackagesByAgentId(ctx, agentId)
+	if err != nil {
+		return nil, err
+	}
+	now := time.Now()
+	for _, pkg := range agentPkgs {
+		if pkg.ServiceType != model.SMS {
+			continue
+		}
+		if pkg.Status != "ACTIVE" {
+			continue
+		}
+		if pkg.ExpiresAt.Before(now) {
+			_ = s.agentPkgRepo.SetPackageStatus(ctx, pkg.Id, "EXPIRED")
+			continue
+		}
+		if pkg.UnitsTotal >= int64(unitsUsed) {
+			return s.useAgentPkgTx(ctx, tx, pkg.Id, unitsUsed)
 		}
 	}
 	return nil, ErrNoPackageUnitsLeft
