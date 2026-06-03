@@ -38,6 +38,8 @@ import (
 	"os"
 	"sync"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 // -------- конфигурация --------
@@ -53,6 +55,14 @@ var (
 )
 
 var tmpl = template.Must(template.ParseFS(templateFS, "templates/*.html"))
+
+func LoadEnv() error {
+	err := godotenv.Load(".env")
+	if err != nil {
+		fmt.Printf("error loading .env file %v", err)
+	}
+	return err
+}
 
 func getenv(key, fallback string) string {
 	if v := os.Getenv(key); v != "" {
@@ -150,22 +160,22 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("User linked via SSO: state=%s token=%s...", state, token[:8])
 
-	type SuccessPageData struct {
-		TokenPrefix string
-		LinkedAt    string
-		State       string
-	}
-
-	data := SuccessPageData{
+	renderSuccess(w, successData{
 		TokenPrefix: token[:8],
 		LinkedAt:    time.Now().Format("02.01.2006 15:04:05"),
-		State:       state,
-	}
+	})
+}
 
-	err = tmpl.ExecuteTemplate(w, "success.html", data)
-	if err != nil {
+// successData — данные для шаблона success_page.html
+type successData struct {
+	TokenPrefix string
+	LinkedAt    string
+}
+
+func renderSuccess(w http.ResponseWriter, data successData) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := tmpl.ExecuteTemplate(w, "success_page.html", data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
 	}
 }
 
@@ -191,6 +201,10 @@ func verifyToken(token string) (bool, error) {
 // -------- main --------
 
 func main() {
+	err := LoadEnv()
+	if err != nil {
+		log.Fatalf("error loading .env file %v", err)
+	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", indexHandler)
 	mux.HandleFunc("/start-sso", startSSOHandler)
