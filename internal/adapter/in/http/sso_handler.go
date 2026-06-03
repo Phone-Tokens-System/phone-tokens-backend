@@ -19,6 +19,7 @@ package http
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"phone-tokens/internal/model"
@@ -76,6 +77,8 @@ func (h *SSOHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 		url.QueryEscape(redirectURI),
 		url.QueryEscape(state),
 	)
+	log.Printf("frontendURL=%q", h.frontendURL)
+	log.Printf("frontendLogin=%q", frontendLogin)
 
 	http.Redirect(w, r, frontendLogin, http.StatusFound)
 }

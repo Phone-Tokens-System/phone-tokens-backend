@@ -47,12 +47,23 @@ import (
 //go:embed templates/*.html
 var templateFS embed.FS
 
-var (
-	agentID         = getenv("AGENT_ID", "00000000-0000-0000-0000-000000000001")
-	phoneTokensAPI  = getenv("PHONE_TOKENS_API", "http://localhost:8080")
-	listenAddr      = getenv("LISTEN_ADDR", ":9090")
-	callbackBaseURL = getenv("CALLBACK_BASE_URL", "http://localhost:9090")
-)
+type Config struct {
+	AgentID         string
+	PhoneTokensAPI  string
+	ListenAddr      string
+	CallbackBaseURL string
+}
+
+func loadConfig() Config {
+	return Config{
+		AgentID:         getenv("AGENT_ID", "..."),
+		PhoneTokensAPI:  getenv("PHONE_TOKENS_API", "http://localhost:8080"),
+		ListenAddr:      getenv("LISTEN_ADDR", ":9090"),
+		CallbackBaseURL: getenv("CALLBACK_BASE_URL", "http://localhost:9090"),
+	}
+}
+
+var cfg Config
 
 var tmpl = template.Must(template.ParseFS(templateFS, "templates/*.html"))
 
@@ -107,11 +118,11 @@ func startSSOHandler(w http.ResponseWriter, r *http.Request) {
 	mu.Unlock()
 
 	// Строим URL редиректа на наш SSO
-	redirectURI := callbackBaseURL + "/callback"
+	redirectURI := cfg.CallbackBaseURL + "/callback"
 	ssoURL := fmt.Sprintf(
 		"%s/api/v1/sso/authorize?agent_id=%s&redirect_uri=%s&state=%s",
-		phoneTokensAPI,
-		url.QueryEscape(agentID),
+		cfg.PhoneTokensAPI,
+		url.QueryEscape(cfg.AgentID),
 		url.QueryEscape(redirectURI),
 		url.QueryEscape(state),
 	)
@@ -183,7 +194,7 @@ func renderSuccess(w http.ResponseWriter, data successData) {
 
 // verifyToken проверяет токен у нашего бэкенда (GET /api/v1/sso/me)
 func verifyToken(token string) (bool, error) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/sso/me?token=%s", phoneTokensAPI, url.QueryEscape(token)))
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/sso/me?token=%s", cfg.PhoneTokensAPI, url.QueryEscape(token)))
 	if err != nil {
 		return false, fmt.Errorf("network error: %w", err)
 	}
@@ -205,19 +216,20 @@ func main() {
 	if err != nil {
 		log.Fatalf("error loading .env file %v", err)
 	}
+	cfg = loadConfig()
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", indexHandler)
 	mux.HandleFunc("/start-sso", startSSOHandler)
 	mux.HandleFunc("/callback", callbackHandler)
 
-	log.Printf("External service demo listening on %s", listenAddr)
-	log.Printf("  Agent ID:          %s", agentID)
-	log.Printf("  Phone Tokens API:  %s", phoneTokensAPI)
-	log.Printf("  Callback base URL: %s", callbackBaseURL)
+	log.Printf("External service demo listening on %s", cfg.ListenAddr)
+	log.Printf("  Agent ID:          %s", cfg.AgentID)
+	log.Printf("  Phone Tokens API:  %s", cfg.PhoneTokensAPI)
+	log.Printf("  Callback base URL: %s", cfg.CallbackBaseURL)
 	log.Printf("")
-	log.Printf("Open http://localhost%s in your browser", listenAddr)
+	log.Printf("Open http://localhost%s in your browser", cfg.ListenAddr)
 
-	if err := http.ListenAndServe(listenAddr, mux); err != nil {
+	if err := http.ListenAndServe(cfg.ListenAddr, mux); err != nil {
 		log.Fatal(err)
 	}
 }
