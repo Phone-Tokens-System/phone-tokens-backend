@@ -64,3 +64,12 @@ func (r *CertificateRepository) GetCertificateInfo(ctx context.Context, csrID in
 	err := r.db.WithContext(ctx).First(&info, "csr_id = ?", csrID).Error
 	return &info, err
 }
+
+func (r *CertificateRepository) GetActiveCertificateInfoByAgentID(ctx context.Context, agentID string) (*model.CertificateInfo, error) {
+	var info model.CertificateInfo
+	err := r.db.WithContext(ctx).
+		Where("id = ? AND is_active = ?", agentID, true).
+		Order("csr_id DESC").
+		First(&info).Error
+	return &info, err
+}

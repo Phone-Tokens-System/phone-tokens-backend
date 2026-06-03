@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"phone-tokens/internal/model"
 
 	"github.com/google/uuid"
 )
@@ -17,6 +18,21 @@ func (s *CertificateService) GetSignedCertificateByCsrID(ctx context.Context, Cs
 		return nil, err
 	}
 	return cert.CertificatePem, nil
+}
+
+func (s *CertificateService) GetSignedCertificateByCsrIDForAgent(ctx context.Context, csrID int, agentID string) ([]byte, error) {
+	cert, err := s.Storage.GetCertificateInfo(ctx, csrID)
+	if err != nil {
+		return nil, err
+	}
+	if cert.ID.String() != agentID {
+		return nil, model.ErrForbidden
+	}
+	return cert.CertificatePem, nil
+}
+
+func (s *CertificateService) GetActiveSignedCertificateByAgentID(ctx context.Context, agentID string) (*model.CertificateInfo, error) {
+	return s.Storage.GetActiveCertificateInfoByAgentID(ctx, agentID)
 }
 
 func (s *CertificateService) VerifyCertificate(cert []byte) error {

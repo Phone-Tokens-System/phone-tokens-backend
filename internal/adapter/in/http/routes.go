@@ -41,6 +41,7 @@ func RegisterRoutes(mux *http.ServeMux, h Handlers, authCfg AuthConfig) {
 	mux.Handle("GET /api/v1/user-profile/me", authMiddleware(RequireRole("user", http.HandlerFunc(h.UserProfile.GetUserProfileById))))
 
 	// agents
+	mux.Handle("GET /api/v1/csr/signed/current", authMiddleware(RequireRole("agent", http.HandlerFunc(h.Agent.GetCurrentSignedCertificate))))
 	mux.Handle("GET /api/v1/csr/signed", authMiddleware(RequireRole("agent", http.HandlerFunc(h.Agent.GetSignedCertificate))))
 	mux.Handle("POST /api/v1/csr/upload", authMiddleware(RequireRole("agent", http.HandlerFunc(h.Agent.UploadCSR))))
 	mux.Handle("GET /api/v1/sms/agents/logs", authMiddleware(RequireRole("agent", http.HandlerFunc(h.Agent.SeeSMSLogs))))
